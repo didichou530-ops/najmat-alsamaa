@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   PhoneCall,
   MessageCircle,
@@ -126,14 +126,10 @@ export const AdminPortal: React.FC = () => {
 
   // Messages System States
   const [messages, setMessages] = useState<CustomerMessage[]>(() => {
-    const saved = localStorage.getItem('najmat_admin_messages');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return INITIAL_MESSAGES;
-      }
-    }
+    try {
+      const saved = localStorage.getItem('najmat_admin_messages');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
     return INITIAL_MESSAGES;
   });
   const [messageFilter, setMessageFilter] = useState<'all' | 'unread' | 'replied'>('all');
@@ -150,21 +146,19 @@ export const AdminPortal: React.FC = () => {
 
   // Tracking numbers dictionary
   const [trackingNumbers, setTrackingNumbers] = useState<{ [orderId: string]: string }>(() => {
-    const saved = localStorage.getItem('najmat_order_tracking_numbers');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return {};
-      }
-    }
+    try {
+      const saved = localStorage.getItem('najmat_order_tracking_numbers');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
     return {};
   });
 
   const handleUpdateTrackingNumber = (orderId: string, val: string) => {
     const updated = { ...trackingNumbers, [orderId]: val };
     setTrackingNumbers(updated);
-    localStorage.setItem('najmat_order_tracking_numbers', JSON.stringify(updated));
+    try {
+      localStorage.setItem('najmat_order_tracking_numbers', JSON.stringify(updated));
+    } catch (e) {}
   };
 
   // Quick Stock Adjusters
@@ -181,7 +175,9 @@ export const AdminPortal: React.FC = () => {
 
   // Messages Handlers
   useEffect(() => {
-    localStorage.setItem('najmat_admin_messages', JSON.stringify(messages));
+    try {
+      localStorage.setItem('najmat_admin_messages', JSON.stringify(messages));
+    } catch (e) {}
   }, [messages]);
 
   const unreadMessagesCount = messages.filter((m) => m.status === 'unread').length;
@@ -221,7 +217,11 @@ export const AdminPortal: React.FC = () => {
 
   // Security Gatekeeper States
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('najmat_admin_auth') === 'true';
+    try {
+      return sessionStorage.getItem('najmat_admin_auth') === 'true';
+    } catch (e) {
+      return false;
+    }
   });
   const [adminPin, setAdminPin] = useState('');
   const [pinError, setPinError] = useState(false);
@@ -230,13 +230,19 @@ export const AdminPortal: React.FC = () => {
   const [pinChangeSuccessMsg, setPinChangeSuccessMsg] = useState(false);
 
   const getSavedPin = () => {
-    return localStorage.getItem('najmat_admin_pin') || '1234';
+    try {
+      return localStorage.getItem('najmat_admin_pin') || '1234';
+    } catch (e) {
+      return '1234';
+    }
   };
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (adminPin.trim() === getSavedPin()) {
-      sessionStorage.setItem('najmat_admin_auth', 'true');
+      try {
+        sessionStorage.setItem('najmat_admin_auth', 'true');
+      } catch (e) {}
       setIsAuthenticated(true);
       setPinError(false);
       setAdminPin('');
@@ -246,7 +252,9 @@ export const AdminPortal: React.FC = () => {
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem('najmat_admin_auth');
+    try {
+      sessionStorage.removeItem('najmat_admin_auth');
+    } catch (e) {}
     setIsAuthenticated(false);
     setAdminPin('');
   };
@@ -254,7 +262,9 @@ export const AdminPortal: React.FC = () => {
   const handleUpdatePin = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPinInput.trim().length >= 4) {
-      localStorage.setItem('najmat_admin_pin', newPinInput.trim());
+      try {
+        localStorage.setItem('najmat_admin_pin', newPinInput.trim());
+      } catch (e) {}
       setPinChangeSuccessMsg(true);
       setTimeout(() => {
         setPinChangeSuccessMsg(false);
