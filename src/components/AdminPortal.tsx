@@ -29,7 +29,14 @@ import {
   Check,
   Lock,
   KeyRound,
-  LogOut
+  LogOut,
+  MessageSquare,
+  Send,
+  Inbox,
+  Filter,
+  Printer,
+  MapPin,
+  Minus
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -38,6 +45,65 @@ import { OrderStatus, Order, Product, CategoryType } from '../types';
 import { WILAYAS_LIST } from '../data/regions';
 import { ProductVisual } from './ProductVisual';
 import { ProductEditorModal } from './ProductEditorModal';
+
+export interface CustomerMessage {
+  id: string;
+  senderName: string;
+  phone: string;
+  wilaya: string;
+  subject: string;
+  message: string;
+  createdAt: string;
+  status: 'unread' | 'replied';
+  category: 'skin_consult' | 'order_track' | 'delivery' | 'general';
+}
+
+const INITIAL_MESSAGES: CustomerMessage[] = [
+  {
+    id: 'MSG-301',
+    senderName: 'أمينة بن علي',
+    phone: '0661234567',
+    wilaya: 'وهران (31 - Oran)',
+    subject: 'استفسار حول درجة كريم الأساس المناسبة للبشرة الحنطية',
+    message: 'السلام عليكم، أريد معرفة أي درجة من كريم الأساس المخملي تناسب البشرة القمحية الحنطية، وهل هو مناسب للبشرة المختلطة؟',
+    createdAt: 'اليوم، 14:30',
+    status: 'unread',
+    category: 'skin_consult'
+  },
+  {
+    id: 'MSG-302',
+    senderName: 'سارة منصوري',
+    phone: '0550987654',
+    wilaya: 'قسنطينة (25 - Constantine)',
+    subject: 'تأكيد وقت وصول الطلبية رقم ORD-8421',
+    message: 'مرحباً، قمت بتأكيد طلبيتي أمس، هل يمكن إرسال رقم تتبع الشحنة مع شركة ياليدين؟ وهل يمكن استلامها من المكتب؟',
+    createdAt: 'اليوم، 11:15',
+    status: 'unread',
+    category: 'order_track'
+  },
+  {
+    id: 'MSG-303',
+    senderName: 'رانيا بوعلام',
+    phone: '0770112233',
+    wilaya: 'الجزائر العاصمة (16 - Alger)',
+    subject: 'سؤال حول توفر باقة النضارة والعناية الليلية',
+    message: 'مساء الخير، هل يتوفر سيروم الهيالورونيك مع كريم العناية الليلية في باقة تخفيض مع التوصيل المجاني لـ 58 ولاية؟',
+    createdAt: 'أمس، 18:40',
+    status: 'replied',
+    category: 'general'
+  },
+  {
+    id: 'MSG-304',
+    senderName: 'مريم قدور',
+    phone: '0561445566',
+    wilaya: 'تلمسان (13 - Tlemcen)',
+    subject: 'شكر وتقدير لجودة المنتجات وسرعة التوصيل',
+    message: 'وصلني الطرد اليوم في حالة ممتازة، المنتجات أصلية وفاخرة جداً والتغليف راقي ومحكم، شكراً جزيلاً لفريق نجمة السماء!',
+    createdAt: 'منذ يومين',
+    status: 'replied',
+    category: 'delivery'
+  }
+];
 
 export const AdminPortal: React.FC = () => {
   const {
@@ -54,9 +120,104 @@ export const AdminPortal: React.FC = () => {
   const { lang, setLang, formatPrice, isRtl, t } = useLanguage();
   const { navigate, isAdminDomain, storeDomainUrl } = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'products' | 'queue' | 'inventory' | 'courier'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'queue' | 'inventory' | 'messages' | 'courier'>('products');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Messages System States
+  const [messages, setMessages] = useState<CustomerMessage[]>(() => {
+    const saved = localStorage.getItem('najmat_admin_messages');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return INITIAL_MESSAGES;
+      }
+    }
+    return INITIAL_MESSAGES;
+  });
+  const [messageFilter, setMessageFilter] = useState<'all' | 'unread' | 'replied'>('all');
+  const [messageSearchQuery, setMessageSearchQuery] = useState('');
+  const [isNewMessageModalOpen, setIsNewMessageModalOpen] = useState(false);
+  const [newMessageForm, setNewMessageForm] = useState({
+    senderName: '',
+    phone: '',
+    wilaya: 'الجزائر العاصمة (16 - Alger)',
+    subject: '',
+    message: '',
+    category: 'skin_consult' as const
+  });
+
+  // Tracking numbers dictionary
+  const [trackingNumbers, setTrackingNumbers] = useState<{ [orderId: string]: string }>(() => {
+    const saved = localStorage.getItem('najmat_order_tracking_numbers');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return {};
+      }
+    }
+    return {};
+  });
+
+  const handleUpdateTrackingNumber = (orderId: string, val: string) => {
+    const updated = { ...trackingNumbers, [orderId]: val };
+    setTrackingNumbers(updated);
+    localStorage.setItem('najmat_order_tracking_numbers', JSON.stringify(updated));
+  };
+
+  // Quick Stock Adjusters
+  const handleQuickAdjustStock = (productId: string, delta: number) => {
+    const prod = products.find((p) => p.id === productId);
+    if (!prod) return;
+    const newStock = Math.max(0, prod.stockCount + delta);
+    updateProduct(productId, { stockCount: newStock });
+  };
+
+  const handleSetExactStock = (productId: string, exactCount: number) => {
+    updateProduct(productId, { stockCount: Math.max(0, exactCount) });
+  };
+
+  // Messages Handlers
+  useEffect(() => {
+    localStorage.setItem('najmat_admin_messages', JSON.stringify(messages));
+  }, [messages]);
+
+  const unreadMessagesCount = messages.filter((m) => m.status === 'unread').length;
+
+  const handleToggleMessageStatus = (id: string) => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === id ? { ...m, status: m.status === 'unread' ? 'replied' : 'unread' } : m
+      )
+    );
+  };
+
+  const handleDeleteMessage = (id: string) => {
+    setMessages((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const handleAddCustomMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessageForm.senderName || !newMessageForm.message) return;
+    const newMsg: CustomerMessage = {
+      id: `MSG-${Date.now().toString().slice(-4)}`,
+      ...newMessageForm,
+      createdAt: 'الآن',
+      status: 'unread'
+    };
+    setMessages((prev) => [newMsg, ...prev]);
+    setIsNewMessageModalOpen(false);
+    setNewMessageForm({
+      senderName: '',
+      phone: '',
+      wilaya: 'الجزائر العاصمة (16 - Alger)',
+      subject: '',
+      message: '',
+      category: 'skin_consult'
+    });
+  };
 
   // Security Gatekeeper States
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -424,10 +585,106 @@ export const AdminPortal: React.FC = () => {
         </div>
       </header>
 
-      {/* 2. Admin Operational Workspace */}
+      {/* 2. Primary Navigation Tab Bar */}
+      <div className="bg-[#1C1917] border-b border-white/10 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto py-2.5 scrollbar-none">
+          {/* Tab 1: Products */}
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              activeTab === 'products'
+                ? 'bg-[#C87D65] text-white shadow-md shadow-[#C87D65]/20 font-bold'
+                : 'text-stone-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span>{lang === 'ar' ? 'المنتجات والكتالوج' : 'Products & Catalog'}</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-black/30 text-white/90">
+              {products.length}
+            </span>
+          </button>
+
+          {/* Tab 2: Orders & Tracking */}
+          <button
+            onClick={() => setActiveTab('queue')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              activeTab === 'queue'
+                ? 'bg-[#C87D65] text-white shadow-md shadow-[#C87D65]/20 font-bold'
+                : 'text-stone-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <Package className="w-4 h-4" />
+            <span>{lang === 'ar' ? 'تتبع الطلبات والشحن' : 'Orders & Tracking'}</span>
+            {newOrdersCount > 0 ? (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500 text-stone-900 font-bold animate-pulse">
+                {newOrdersCount} {lang === 'ar' ? 'جديد' : 'new'}
+              </span>
+            ) : (
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-black/30 text-white/90">
+                {orders.length}
+              </span>
+            )}
+          </button>
+
+          {/* Tab 3: Inventory */}
+          <button
+            onClick={() => setActiveTab('inventory')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              activeTab === 'inventory'
+                ? 'bg-[#C87D65] text-white shadow-md shadow-[#C87D65]/20 font-bold'
+                : 'text-stone-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <Box className="w-4 h-4" />
+            <span>{lang === 'ar' ? 'إدارة المخزون والتنبيهات' : 'Inventory & Stock'}</span>
+            {lowStockCount > 0 && (
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-red-500 text-white font-bold">
+                {lowStockCount} {lang === 'ar' ? 'تنبيه' : 'low'}
+              </span>
+            )}
+          </button>
+
+          {/* Tab 4: Messages */}
+          <button
+            onClick={() => setActiveTab('messages')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              activeTab === 'messages'
+                ? 'bg-[#C87D65] text-white shadow-md shadow-[#C87D65]/20 font-bold'
+                : 'text-stone-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>{lang === 'ar' ? 'رسائل واستفسارات الزبائن' : 'Customer Messages'}</span>
+            {unreadMessagesCount > 0 ? (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500 text-stone-900 font-bold">
+                {unreadMessagesCount} {lang === 'ar' ? 'جديدة' : 'new'}
+              </span>
+            ) : (
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-black/30 text-white/90">
+                {messages.length}
+              </span>
+            )}
+          </button>
+
+          {/* Tab 5: Courier Hub */}
+          <button
+            onClick={() => setActiveTab('courier')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              activeTab === 'courier'
+                ? 'bg-[#C87D65] text-white shadow-md shadow-[#C87D65]/20 font-bold'
+                : 'text-stone-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <Truck className="w-4 h-4" />
+            <span>{lang === 'ar' ? 'شركات التوصيل (58 ولاية)' : 'Courier Logistics'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 3. Admin Operational Workspace */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 space-y-6">
         {/* Dynamic KPI Performance Strip */}
-        {activeTab === 'products' ? (
+        {activeTab === 'products' && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-xs text-stone-500">
@@ -480,7 +737,9 @@ export const AdminPortal: React.FC = () => {
               </div>
             </div>
           </div>
-        ) : (
+        )}
+
+        {activeTab === 'queue' && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-xs text-stone-500">
@@ -502,22 +761,16 @@ export const AdminPortal: React.FC = () => {
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="font-serif font-bold text-2xl text-stone-900">{confirmedCount}</span>
-                <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-mono font-medium">
-                  Ready to pack
-                </span>
               </div>
             </div>
 
             <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-xs text-stone-500">
-                <span>{lang === 'ar' ? 'مع شركة التوصيل' : 'In Transit (Yalidine)'}</span>
+                <span>{lang === 'ar' ? 'قيد التوصيل مع شركة الشحن' : 'In Transit / Shipped'}</span>
                 <Truck className="w-4 h-4 text-indigo-600" />
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="font-serif font-bold text-2xl text-stone-900">{shippedCount}</span>
-                <span className="text-[10px] text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded font-mono font-medium">
-                  Active tracking
-                </span>
               </div>
             </div>
 
@@ -528,6 +781,152 @@ export const AdminPortal: React.FC = () => {
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="font-mono font-bold text-xl text-stone-900">{totalCodValue.toLocaleString()} DZD</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'inventory' && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-stone-500">
+                <span>{lang === 'ar' ? 'إجمالي قطع المخزن' : 'Total Units'}</span>
+                <Box className="w-4 h-4 text-stone-700" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-serif font-bold text-2xl text-stone-900">{totalStockUnits}</span>
+                <span className="text-[10px] text-stone-500 font-mono">قطعة</span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-stone-500">
+                <span>{lang === 'ar' ? 'القيمة الإجمالية للمخزون' : 'Stock Value'}</span>
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-mono font-bold text-xl text-stone-900">{totalInventoryValueDZD.toLocaleString()} DZD</span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-stone-500">
+                <span>{lang === 'ar' ? 'أصناف قاربت على النفاد' : 'Low Stock (≤15)'}</span>
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-serif font-bold text-2xl text-amber-700">{lowStockCount}</span>
+                <span className="text-[10px] text-amber-600 font-mono">منتج</span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-stone-500">
+                <span>{lang === 'ar' ? 'أصناف نفدت تماماً' : 'Out of Stock'}</span>
+                <XCircle className="w-4 h-4 text-red-500" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-serif font-bold text-2xl text-red-700">
+                  {products.filter((p) => p.stockCount === 0).length}
+                </span>
+                <span className="text-[10px] text-red-600 font-mono">منتج</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'messages' && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-stone-500">
+                <span>{lang === 'ar' ? 'إجمالي الرسائل الواردة' : 'Total Inquiries'}</span>
+                <MessageSquare className="w-4 h-4 text-stone-700" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-serif font-bold text-2xl text-stone-900">{messages.length}</span>
+                <span className="text-[10px] text-stone-500 font-mono">رسالة</span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-stone-500">
+                <span>{lang === 'ar' ? 'رسائل جديدة بانتظار الرد' : 'Unread Inquiries'}</span>
+                <Clock className="w-4 h-4 text-amber-500" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-serif font-bold text-2xl text-amber-700">{unreadMessagesCount}</span>
+                <span className="text-[10px] text-amber-600 font-mono">جديد</span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-stone-500">
+                <span>{lang === 'ar' ? 'تمت الإجابة والرد' : 'Replied'}</span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-serif font-bold text-2xl text-emerald-700">
+                  {messages.filter((m) => m.status === 'replied').length}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-stone-500">
+                <span>{lang === 'ar' ? 'استشارات البشرة والدرجات' : 'Skin Consultations'}</span>
+                <Sparkles className="w-4 h-4 text-[#C87D65]" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-serif font-bold text-2xl text-[#C87D65]">
+                  {messages.filter((m) => m.category === 'skin_consult').length}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'courier' && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-stone-500">
+                <span>{lang === 'ar' ? 'الولايات المغطاة بالشحن' : 'Covered Wilayas'}</span>
+                <MapPin className="w-4 h-4 text-[#C87D65]" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-serif font-bold text-2xl text-stone-900">58 / 58</span>
+                <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-mono font-medium">
+                  تغطية كاملة
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-stone-500">
+                <span>{lang === 'ar' ? 'شركات التوصيل النشطة' : 'Active Couriers'}</span>
+                <Truck className="w-4 h-4 text-indigo-600" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-serif font-bold text-2xl text-stone-900">Yalidine / ZR</span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-stone-500">
+                <span>{lang === 'ar' ? 'طلبات قيد التوصيل الآن' : 'In Transit'}</span>
+                <Clock className="w-4 h-4 text-amber-500" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-serif font-bold text-2xl text-stone-900">{shippedCount}</span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-stone-500">
+                <span>{lang === 'ar' ? 'نسبة الاستلام والتحصيل' : 'Success Rate'}</span>
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-serif font-bold text-2xl text-emerald-700">98.4%</span>
               </div>
             </div>
           </div>
@@ -923,74 +1322,340 @@ export const AdminPortal: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 2: INVENTORY & BATCH FRESHNESS */}
+        {/* TAB 2: INVENTORY & STOCK MANAGEMENT */}
         {activeTab === 'inventory' && (
           <div className="bg-white rounded-3xl border border-stone-200 p-6 shadow-sm space-y-6">
-            <div>
-              <h3 className="font-serif font-bold text-lg text-stone-900">
-                Inventory & Expiration Date Management
-              </h3>
-              <p className="text-xs text-stone-500 font-sans">
-                Real-time stock alerts per shade, production batch numbers, and climate stability monitoring.
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-100">
+              <div>
+                <h3 className="font-serif font-bold text-lg text-stone-900 flex items-center gap-2">
+                  <Box className="w-5 h-5 text-[#C87D65]" />
+                  <span>{lang === 'ar' ? 'إدارة المخزون وتنبيهات الكميات' : 'Inventory & Stock Management'}</span>
+                </h3>
+                <p className="text-xs text-stone-500 font-sans mt-0.5">
+                  {lang === 'ar'
+                    ? 'تحكم مباشر في كميات المنتجات مع أزرار الزيادة والنقصان السريعة وتنبيهات النقص الفورية.'
+                    : 'Real-time stock controls, quick adjustment buttons, and low inventory threshold monitors.'}
+                </p>
+              </div>
+
+              {/* Quick Inventory Summary Pill */}
+              <div className="flex items-center gap-2 text-xs font-mono">
+                <span className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200/60 font-semibold flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  {totalStockUnits} {lang === 'ar' ? 'قطعة في المستودع' : 'Units Total'}
+                </span>
+              </div>
             </div>
 
+            {/* Inventory Product Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {products.map((prod) => (
-                <div
-                  key={prod.id}
-                  className="p-4 rounded-2xl border border-stone-200 bg-[#FAF7F5] space-y-3"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-stone-400">
-                        {prod.category}
+              {products.map((prod) => {
+                const isOutOfStock = prod.stockCount === 0;
+                const isLowStock = prod.stockCount > 0 && prod.stockCount <= 15;
+                const totalProdValue = prod.stockCount * prod.priceDZD;
+
+                return (
+                  <div
+                    key={prod.id}
+                    className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                      isOutOfStock
+                        ? 'border-red-300 bg-red-50/20'
+                        : isLowStock
+                        ? 'border-amber-300 bg-amber-50/20'
+                        : 'border-stone-200 bg-[#FAF7F5]'
+                    }`}
+                  >
+                    {/* Header: Name & Status */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-stone-400 block">
+                          {prod.category} · {prod.batchNumber}
+                        </span>
+                        <h4 className="font-serif font-bold text-sm text-stone-900 line-clamp-1">
+                          {lang === 'ar' ? prod.nameAr || prod.name : prod.name}
+                        </h4>
+                      </div>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold whitespace-nowrap ${
+                          isOutOfStock
+                            ? 'bg-red-100 text-red-800 border border-red-200'
+                            : isLowStock
+                            ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                            : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        }`}
+                      >
+                        {isOutOfStock
+                          ? (lang === 'ar' ? 'نفد من المخزون' : 'Out of Stock')
+                          : `${prod.stockCount} ${lang === 'ar' ? 'قطعة' : 'units'}`}
                       </span>
-                      <h4 className="font-serif font-bold text-sm text-stone-900 line-clamp-1">
-                        {lang === 'ar' ? prod.nameAr || prod.name : prod.name}
-                      </h4>
                     </div>
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                        prod.stockCount < 20
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-emerald-100 text-emerald-800'
-                      }`}
-                    >
-                      {prod.stockCount} in stock
-                    </span>
-                  </div>
 
-                  <div className="space-y-1 text-xs text-stone-600 font-mono">
-                    <div className="flex justify-between">
-                      <span>Batch:</span>
-                      <span className="text-stone-900 font-bold">{prod.batchNumber}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Expiration:</span>
-                      <span className="text-emerald-700 font-bold">{prod.expirationDate}</span>
-                    </div>
-                  </div>
-
-                  {prod.shades && (
-                    <div className="pt-2 border-t border-stone-200">
-                      <span className="text-[10px] text-stone-500 block mb-1">
-                        Variants ({prod.shades.length} shades):
+                    {/* Quick Stock Controls */}
+                    <div className="p-2.5 rounded-xl bg-white border border-stone-200/80 space-y-2">
+                      <span className="text-[11px] font-semibold text-stone-700 block">
+                        {lang === 'ar' ? 'التحكم السريع في المخزون:' : 'Quick Stock Adjuster:'}
                       </span>
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {prod.shades.slice(0, 8).map((sh) => (
-                          <div
-                            key={sh.id}
-                            title={sh.name}
-                            className="w-4 h-4 rounded-full border border-black/10 shadow-2xs"
-                            style={{ backgroundColor: sh.hex }}
+                        <button
+                          onClick={() => handleQuickAdjustStock(prod.id, 10)}
+                          className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-mono font-bold border border-emerald-200 transition-colors cursor-pointer"
+                        >
+                          +10
+                        </button>
+                        <button
+                          onClick={() => handleQuickAdjustStock(prod.id, 5)}
+                          className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-mono font-bold border border-emerald-200 transition-colors cursor-pointer"
+                        >
+                          +5
+                        </button>
+                        <button
+                          onClick={() => handleQuickAdjustStock(prod.id, 1)}
+                          className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-mono font-bold border border-emerald-200 transition-colors cursor-pointer"
+                        >
+                          +1
+                        </button>
+                        <button
+                          onClick={() => handleQuickAdjustStock(prod.id, -1)}
+                          disabled={prod.stockCount <= 0}
+                          className="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 disabled:opacity-40 text-red-800 text-[11px] font-mono font-bold border border-red-200 transition-colors cursor-pointer"
+                        >
+                          -1
+                        </button>
+
+                        {/* Direct input */}
+                        <div className="flex items-center gap-1 ms-auto">
+                          <input
+                            type="number"
+                            min="0"
+                            value={prod.stockCount}
+                            onChange={(e) => handleSetExactStock(prod.id, parseInt(e.target.value) || 0)}
+                            className="w-16 px-1.5 py-0.5 text-xs text-center font-mono font-bold bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:border-[#C87D65]"
                           />
-                        ))}
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {/* Stock Valuation & Batch Details */}
+                    <div className="space-y-1 text-xs text-stone-600 font-mono pt-1">
+                      <div className="flex justify-between">
+                        <span>{lang === 'ar' ? 'سعر البيع:' : 'Price:'}</span>
+                        <span className="text-stone-900 font-bold">{prod.priceDZD.toLocaleString()} DZD</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{lang === 'ar' ? 'قيمة مخزون الصنف:' : 'Total Item Asset:'}</span>
+                        <span className="text-emerald-700 font-bold">{totalProdValue.toLocaleString()} DZD</span>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span>{lang === 'ar' ? 'تاريخ الصلاحية:' : 'Expires:'}</span>
+                        <span className="text-stone-500">{prod.expirationDate}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: CUSTOMER MESSAGES & INQUIRIES HUB */}
+        {activeTab === 'messages' && (
+          <div className="bg-white rounded-3xl border border-stone-200 p-6 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-100">
+              <div>
+                <h3 className="font-serif font-bold text-lg text-stone-900 flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-[#C87D65]" />
+                  <span>{lang === 'ar' ? 'رسائل واستفسارات الزبائن' : 'Customer Inquiries & Concierge Hub'}</span>
+                </h3>
+                <p className="text-xs text-stone-500 font-sans mt-0.5">
+                  {lang === 'ar'
+                    ? 'إدارة الرسائل الواردة، استشارات البشرة، استفسارات الطلبيات والرد السريع عبر واتساب.'
+                    : 'Manage incoming questions, skin diagnostic consultations, and 1-click WhatsApp concierge replies.'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsNewMessageModalOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-[#C87D65] hover:bg-[#B36B54] text-white text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{lang === 'ar' ? 'إضافة استفسار يدوي' : 'New Customer Inquiry'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Filter and Search Bar for Messages */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#FAF7F5] p-3 rounded-2xl border border-stone-200/80">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 text-stone-400 absolute left-3 top-2.5 rtl:left-auto rtl:right-3" />
+                <input
+                  type="text"
+                  value={messageSearchQuery}
+                  onChange={(e) => setMessageSearchQuery(e.target.value)}
+                  placeholder={
+                    lang === 'ar'
+                      ? 'البحث في الرسائل بالاسم، الولاية، أو الموضوع...'
+                      : 'Search by sender, wilaya, or subject...'
+                  }
+                  className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-1.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-1 focus:ring-[#C87D65]"
+                />
+              </div>
+
+              {/* Status Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1">
+                <button
+                  onClick={() => setMessageFilter('all')}
+                  className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                    messageFilter === 'all'
+                      ? 'bg-stone-900 text-white font-bold'
+                      : 'bg-white text-stone-600 hover:bg-stone-100 border border-stone-200'
+                  }`}
+                >
+                  {lang === 'ar' ? 'جميع الرسائل' : 'All'} ({messages.length})
+                </button>
+                <button
+                  onClick={() => setMessageFilter('unread')}
+                  className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                    messageFilter === 'unread'
+                      ? 'bg-amber-500 text-stone-900 font-bold'
+                      : 'bg-white text-stone-600 hover:bg-stone-100 border border-stone-200'
+                  }`}
+                >
+                  {lang === 'ar' ? 'غير مقروءة' : 'Unread'} ({unreadMessagesCount})
+                </button>
+                <button
+                  onClick={() => setMessageFilter('replied')}
+                  className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                    messageFilter === 'replied'
+                      ? 'bg-emerald-600 text-white font-bold'
+                      : 'bg-white text-stone-600 hover:bg-stone-100 border border-stone-200'
+                  }`}
+                >
+                  {lang === 'ar' ? 'تم الرد' : 'Replied'} ({messages.filter((m) => m.status === 'replied').length})
+                </button>
+              </div>
+            </div>
+
+            {/* Messages List Cards */}
+            <div className="space-y-3">
+              {messages
+                .filter((msg) => {
+                  if (messageFilter === 'unread') return msg.status === 'unread';
+                  if (messageFilter === 'replied') return msg.status === 'replied';
+                  return true;
+                })
+                .filter((msg) => {
+                  if (!messageSearchQuery.trim()) return true;
+                  const q = messageSearchQuery.toLowerCase();
+                  return (
+                    msg.senderName.toLowerCase().includes(q) ||
+                    msg.subject.toLowerCase().includes(q) ||
+                    msg.message.toLowerCase().includes(q) ||
+                    msg.wilaya.toLowerCase().includes(q) ||
+                    msg.phone.includes(q)
+                  );
+                })
+                .map((msg) => {
+                  const cleanPhone = msg.phone.replace(/^0/, '');
+                  const waReplyUrl = `https://wa.me/213${cleanPhone}?text=${encodeURIComponent(
+                    `مرحباً ${msg.senderName}، معكم فريق خدمة عملاء متجر نجمة السماء بخصوص استفساركم: "${msg.subject}". يسعدنا الرد عليكم:`
+                  )}`;
+
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                        msg.status === 'unread'
+                          ? 'border-[#C87D65]/40 bg-white shadow-xs ring-1 ring-[#C87D65]/10'
+                          : 'border-stone-200 bg-[#FAF7F5]'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-stone-100">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                              msg.status === 'unread'
+                                ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                : 'bg-emerald-100 text-emerald-800'
+                            }`}
+                          >
+                            {msg.status === 'unread' ? (lang === 'ar' ? 'بانتظار الرد' : 'Unread') : (lang === 'ar' ? 'تمت الإجابة' : 'Replied')}
+                          </span>
+
+                          <span className="font-serif font-bold text-sm text-stone-900">
+                            {msg.senderName}
+                          </span>
+
+                          <span className="text-xs text-stone-500 font-mono flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-stone-400" />
+                            {msg.wilaya}
+                          </span>
+
+                          <a
+                            href={`tel:${msg.phone}`}
+                            className="text-xs text-stone-500 font-mono hover:text-stone-900 flex items-center gap-1"
+                          >
+                            <PhoneCall className="w-3 h-3 text-[#C87D65]" />
+                            {msg.phone}
+                          </a>
+                        </div>
+
+                        <span className="text-[11px] text-stone-400 font-mono">
+                          {msg.createdAt} · {msg.id}
+                        </span>
+                      </div>
+
+                      {/* Subject & Body */}
+                      <div className="py-3 space-y-1">
+                        <h4 className="font-semibold text-sm text-stone-900 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#C87D65]" />
+                          {msg.subject}
+                        </h4>
+                        <p className="text-xs text-stone-600 leading-relaxed font-sans pr-3 rtl:pr-3 rtl:pl-0">
+                          {msg.message}
+                        </p>
+                      </div>
+
+                      {/* Action Footer */}
+                      <div className="pt-2 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          {/* 1-Click WhatsApp Reply */}
+                          <a
+                            href={waReplyUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => {
+                              if (msg.status === 'unread') handleToggleMessageStatus(msg.id);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20BE5A] text-white text-xs font-semibold shadow-2xs transition-colors"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>{lang === 'ar' ? 'الرد عبر واتساب مباشرة' : 'WhatsApp Direct Reply'}</span>
+                          </a>
+
+                          {/* Toggle status */}
+                          <button
+                            onClick={() => handleToggleMessageStatus(msg.id)}
+                            className="px-3 py-1.5 rounded-xl border border-stone-200 hover:bg-stone-100 text-stone-700 text-xs font-medium transition-colors cursor-pointer"
+                          >
+                            {msg.status === 'unread'
+                              ? (lang === 'ar' ? 'تعيين كـ تم الرد' : 'Mark as Replied')
+                              : (lang === 'ar' ? 'تعيين كـ غير مقروء' : 'Mark as Unread')}
+                          </button>
+                        </div>
+
+                        {/* Delete message */}
+                        <button
+                          onClick={() => handleDeleteMessage(msg.id)}
+                          className="p-1.5 text-stone-400 hover:text-red-600 transition-colors cursor-pointer"
+                          title={lang === 'ar' ? 'حذف الرسالة' : 'Delete'}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         )}
@@ -1160,6 +1825,108 @@ export const AdminPortal: React.FC = () => {
                   className="w-1/2 py-2 px-3 rounded-xl bg-[#C87D65] hover:bg-[#B36B54] disabled:opacity-50 text-white text-xs font-medium cursor-pointer"
                 >
                   {lang === 'ar' ? 'حفظ الرمز' : 'Save PIN'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* New Customer Inquiry Modal */}
+      {isNewMessageModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" dir={isRtl ? 'rtl' : 'ltr'}>
+          <div className="bg-[#1C1917] border border-white/15 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-4 text-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="font-serif font-bold text-base flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-[#C87D65]" />
+                <span>{lang === 'ar' ? 'تسجيل استفسار زبون جديد' : 'New Customer Inquiry'}</span>
+              </h3>
+              <button
+                onClick={() => setIsNewMessageModalOpen(false)}
+                className="text-stone-400 hover:text-white text-sm cursor-pointer p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCustomMessage} className="space-y-3.5 text-xs">
+              <div className="space-y-1">
+                <label className="text-stone-300 font-medium">{lang === 'ar' ? 'اسم الزبونة / العميل:' : 'Customer Name:'}</label>
+                <input
+                  type="text"
+                  required
+                  value={newMessageForm.senderName}
+                  onChange={(e) => setNewMessageForm({ ...newMessageForm, senderName: e.target.value })}
+                  placeholder="مثال: ياسمين بلقاسم"
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-[#C87D65]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-stone-300 font-medium">{lang === 'ar' ? 'رقم الهاتف (واتساب):' : 'Phone Number:'}</label>
+                  <input
+                    type="tel"
+                    required
+                    value={newMessageForm.phone}
+                    onChange={(e) => setNewMessageForm({ ...newMessageForm, phone: e.target.value })}
+                    placeholder="0661000000"
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-white font-mono focus:outline-none focus:border-[#C87D65]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-stone-300 font-medium">{lang === 'ar' ? 'الولاية:' : 'Wilaya:'}</label>
+                  <select
+                    value={newMessageForm.wilaya}
+                    onChange={(e) => setNewMessageForm({ ...newMessageForm, wilaya: e.target.value })}
+                    className="w-full px-2.5 py-2 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-[#C87D65]"
+                  >
+                    {WILAYAS_LIST.slice(0, 58).map((w) => (
+                      <option key={w.code} value={`${w.nameAr} (${w.code})`} className="bg-[#1C1917] text-white">
+                        {w.code} - {w.nameAr}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-stone-300 font-medium">{lang === 'ar' ? 'موضوع الاستفسار:' : 'Subject:'}</label>
+                <input
+                  type="text"
+                  required
+                  value={newMessageForm.subject}
+                  onChange={(e) => setNewMessageForm({ ...newMessageForm, subject: e.target.value })}
+                  placeholder="مثال: استفسار عن التوصيل السريع لولاية سطيف"
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-[#C87D65]"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-stone-300 font-medium">{lang === 'ar' ? 'تفاصيل الرسالة:' : 'Message:'}</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={newMessageForm.message}
+                  onChange={(e) => setNewMessageForm({ ...newMessageForm, message: e.target.value })}
+                  placeholder="اكتب استفسار أو ملاحظة الزبونة هنا..."
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-[#C87D65]"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsNewMessageModalOpen(false)}
+                  className="w-1/2 py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-medium cursor-pointer"
+                >
+                  {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 py-2 px-3 rounded-xl bg-[#C87D65] hover:bg-[#B36B54] text-white text-xs font-semibold shadow-md transition-colors cursor-pointer"
+                >
+                  {lang === 'ar' ? 'حفظ الرسالة' : 'Save Message'}
                 </button>
               </div>
             </form>
