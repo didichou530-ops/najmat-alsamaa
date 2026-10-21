@@ -264,14 +264,6 @@ export const Footer: React.FC = () => {
                 </button>
               </li>
               <li>
-                <button
-                  onClick={() => navigate('/admin')}
-                  className="hover:text-white transition-colors text-left rtl:text-right cursor-pointer flex items-center gap-1 text-[#E8B4A2]"
-                >
-                  <span>{lang === 'ar' ? 'لوحة التحكم المركزية (#/admin)' : 'Merchant Control Center (#/admin)'}</span>
-                </button>
-              </li>
-              <li>
                 <a
                   href="https://wa.me/213550000000"
                   target="_blank"

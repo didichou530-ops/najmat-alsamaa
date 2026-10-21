@@ -26,7 +26,10 @@ import {
   Sparkles,
   ShoppingBag,
   Eye,
-  Check
+  Check,
+  Lock,
+  KeyRound,
+  LogOut
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -54,6 +57,51 @@ export const AdminPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'products' | 'queue' | 'inventory' | 'courier'>('products');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Security Gatekeeper States
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('najmat_admin_auth') === 'true';
+  });
+  const [adminPin, setAdminPin] = useState('');
+  const [pinError, setPinError] = useState(false);
+  const [isChangePinModalOpen, setIsChangePinModalOpen] = useState(false);
+  const [newPinInput, setNewPinInput] = useState('');
+  const [pinChangeSuccessMsg, setPinChangeSuccessMsg] = useState(false);
+
+  const getSavedPin = () => {
+    return localStorage.getItem('najmat_admin_pin') || '1234';
+  };
+
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminPin.trim() === getSavedPin()) {
+      sessionStorage.setItem('najmat_admin_auth', 'true');
+      setIsAuthenticated(true);
+      setPinError(false);
+      setAdminPin('');
+    } else {
+      setPinError(true);
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('najmat_admin_auth');
+    setIsAuthenticated(false);
+    setAdminPin('');
+  };
+
+  const handleUpdatePin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPinInput.trim().length >= 4) {
+      localStorage.setItem('najmat_admin_pin', newPinInput.trim());
+      setPinChangeSuccessMsg(true);
+      setTimeout(() => {
+        setPinChangeSuccessMsg(false);
+        setIsChangePinModalOpen(false);
+        setNewPinInput('');
+      }, 1500);
+    }
+  };
 
   // Product Management States
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
@@ -211,6 +259,85 @@ export const AdminPortal: React.FC = () => {
     navigate(`/product/${prod.id}`);
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#141211] text-[#FAF7F5] flex items-center justify-center p-4 selection:bg-[#C87D65] selection:text-white" dir={isRtl ? 'rtl' : 'ltr'}>
+        <div className="max-w-md w-full bg-[#1C1917]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-8 sm:p-10 shadow-2xl space-y-6 text-center">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-[#C87D65]/15 border border-[#C87D65]/30 flex items-center justify-center text-[#C87D65] shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="text-[10px] font-mono tracking-widest uppercase text-[#C87D65] px-2.5 py-0.5 rounded-full bg-[#C87D65]/10 border border-[#C87D65]/20 inline-block">
+              {lang === 'ar' ? 'منطقة إدارية سرية ومحمية' : 'Encrypted Administrative Zone'}
+            </span>
+            <h1 className="text-2xl font-serif font-bold text-white tracking-wide">
+              {lang === 'ar' ? 'نجمة السماء | بوابة الإدارة' : 'Najmat Al Samaa | Admin Gate'}
+            </h1>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              {lang === 'ar'
+                ? 'لوحة التحكم مخصصة لمدير المتجر فقط ومحجوبة عن الزبائن. يرجى إدخال رمز الأمان للمتابعة.'
+                : 'Restricted merchant portal. Please enter your secret Master PIN to proceed.'}
+            </p>
+          </div>
+
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <div className="space-y-1.5 text-left rtl:text-right">
+              <label className="text-[11px] font-mono uppercase tracking-wider text-stone-400 block text-center">
+                {lang === 'ar' ? 'رمز الأمان السري (PIN)' : 'Secret Master PIN'}
+              </label>
+              <div className="relative">
+                <input
+                  type="password"
+                  autoFocus
+                  value={adminPin}
+                  onChange={(e) => {
+                    setAdminPin(e.target.value);
+                    if (pinError) setPinError(false);
+                  }}
+                  placeholder="••••"
+                  className={`w-full px-4 py-3 rounded-xl bg-white/5 border text-center text-2xl tracking-[0.4em] font-mono text-white focus:outline-none transition-all ${
+                    pinError
+                      ? 'border-red-500/80 ring-2 ring-red-500/30'
+                      : 'border-white/15 focus:border-[#C87D65] focus:ring-1 focus:ring-[#C87D65]'
+                  }`}
+                />
+              </div>
+              {pinError && (
+                <p className="text-xs text-red-400 text-center flex items-center justify-center gap-1 mt-1">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>{lang === 'ar' ? 'رمز الأمان غير صحيح، يرجى المحاولة ثانية' : 'Incorrect security PIN. Please try again.'}</span>
+                </p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3 px-4 bg-[#C87D65] hover:bg-[#B36B54] text-white font-medium text-sm rounded-xl shadow-lg shadow-[#C87D65]/20 hover:shadow-[#C87D65]/30 transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <KeyRound className="w-4 h-4" />
+              <span>{lang === 'ar' ? 'فتح لوحة التحكم' : 'Unlock Admin Portal'}</span>
+            </button>
+          </form>
+
+          <div className="pt-4 border-t border-white/10 flex flex-col items-center gap-3">
+            <button
+              onClick={() => navigate('/store')}
+              className="text-xs text-stone-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" />
+              <span>{lang === 'ar' ? 'الرجوع إلى متجر الزبائن' : 'Back to Storefront'}</span>
+            </button>
+
+            <span className="text-[10px] text-stone-600 font-mono">
+              {lang === 'ar' ? 'الرمز الافتراضي: 1234' : 'Default Master PIN: 1234'}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F4F1EA] text-stone-900 flex flex-col font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* 1. Dedicated Admin Top Navigation Header */}
@@ -273,6 +400,26 @@ export const AdminPortal: React.FC = () => {
           >
             <ExternalLink className="w-3.5 h-3.5 text-[#C87D65]" />
             <span>{lang === 'ar' ? 'زيارة متجر نجمة السماء' : 'Visit Storefront'}</span>
+          </button>
+
+          {/* Change PIN button */}
+          <button
+            onClick={() => setIsChangePinModalOpen(true)}
+            className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-stone-300 hover:text-white text-xs font-medium flex items-center gap-1 transition-all border border-white/10 cursor-pointer"
+            title={lang === 'ar' ? 'تغيير رمز المرور' : 'Change Security PIN'}
+          >
+            <KeyRound className="w-3.5 h-3.5 text-stone-400" />
+            <span className="hidden sm:inline">{lang === 'ar' ? 'رمز الأمان' : 'PIN'}</span>
+          </button>
+
+          {/* Logout & Lock Button */}
+          <button
+            onClick={handleLogout}
+            className="px-3 py-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 hover:text-red-200 text-xs font-medium flex items-center gap-1.5 transition-all border border-red-500/30 cursor-pointer"
+            title={lang === 'ar' ? 'إغلاق اللوحة وقفل الجلسة' : 'Lock & Exit'}
+          >
+            <LogOut className="w-3.5 h-3.5 text-red-400" />
+            <span>{lang === 'ar' ? 'قفل اللوحة' : 'Lock'}</span>
           </button>
         </div>
       </header>
@@ -960,6 +1107,62 @@ export const AdminPortal: React.FC = () => {
                 {lang === 'ar' ? 'نعم، احذف المنتج' : 'Confirm Delete'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Change Security PIN Modal */}
+      {isChangePinModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" dir={isRtl ? 'rtl' : 'ltr'}>
+          <div className="bg-[#1C1917] border border-white/15 rounded-3xl p-6 sm:p-8 max-w-sm w-full space-y-4 text-white shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h3 className="font-serif font-bold text-base flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-[#C87D65]" />
+                <span>{lang === 'ar' ? 'تغيير رمز الأمان للوحة' : 'Change Security PIN'}</span>
+              </h3>
+              <button
+                onClick={() => setIsChangePinModalOpen(false)}
+                className="text-stone-400 hover:text-white text-sm cursor-pointer p-1"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-stone-400">
+              {lang === 'ar'
+                ? 'أدخل الرمز السري الجديد (4 خانات على الأقل):'
+                : 'Enter your new PIN (at least 4 characters):'}
+            </p>
+            <form onSubmit={handleUpdatePin} className="space-y-4">
+              <input
+                type="password"
+                autoFocus
+                value={newPinInput}
+                onChange={(e) => setNewPinInput(e.target.value)}
+                placeholder="••••"
+                className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-center text-xl font-mono focus:border-[#C87D65] focus:outline-none text-white"
+              />
+              {pinChangeSuccessMsg && (
+                <p className="text-xs text-emerald-400 text-center flex items-center justify-center gap-1 font-medium">
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{lang === 'ar' ? 'تم حفظ الرمز الجديد بنجاح!' : 'PIN updated successfully!'}</span>
+                </p>
+              )}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsChangePinModalOpen(false)}
+                  className="w-1/2 py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-medium cursor-pointer"
+                >
+                  {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  disabled={newPinInput.trim().length < 4}
+                  className="w-1/2 py-2 px-3 rounded-xl bg-[#C87D65] hover:bg-[#B36B54] disabled:opacity-50 text-white text-xs font-medium cursor-pointer"
+                >
+                  {lang === 'ar' ? 'حفظ الرمز' : 'Save PIN'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

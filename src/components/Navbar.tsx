@@ -122,15 +122,6 @@ export const Navbar: React.FC = () => {
             >
               {t('navTrackOrder')}
             </button>
-            <button
-              onClick={() => navigate('/admin')}
-              className={`hover:text-stone-900 transition-colors whitespace-nowrap shrink-0 hover:underline underline-offset-4 cursor-pointer flex items-center gap-1 ${
-                route === '/admin' ? 'text-stone-900 font-bold' : ''
-              }`}
-            >
-              <Shield className="w-3 h-3 text-[#C87D65]" />
-              <span>{t('navAdminQueue')}</span>
-            </button>
           </nav>
 
           {/* Zone 3: Loyalty points, Search affordance & Primary Bag Action */}
@@ -223,16 +214,6 @@ export const Navbar: React.FC = () => {
               className="block w-full text-left rtl:text-right py-2 text-xs font-semibold uppercase tracking-wider text-stone-800 cursor-pointer"
             >
               {t('navTrackOrder')}
-            </button>
-            <button
-              onClick={() => {
-                navigate('/admin');
-                setIsMobileMenuOpen(false);
-              }}
-              className="block w-full text-left rtl:text-right py-2 text-xs font-semibold uppercase tracking-wider text-stone-800 flex items-center gap-1.5 cursor-pointer"
-            >
-              <Shield className="w-3.5 h-3.5 text-[#C87D65]" />
-              <span>{t('navAdminQueue')}</span>
             </button>
           </div>
         )}
