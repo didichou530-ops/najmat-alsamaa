@@ -2,20 +2,27 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Single Page App Redirect for GitHub Pages
+      var path = window.location.pathname;
+      var repo = '/najmat-alsamaa';
+      if (path.startsWith(repo)) {
+        var sub = path.slice(repo.length).replace(/^\/+/, '');
+        if (sub && sub !== 'index.html') {
+          window.location.replace(repo + '/#/' + sub + window.location.search + window.location.hash);
+        } else {
+          window.location.replace(repo + '/' + window.location.search + window.location.hash);
+        }
+      } else {
+        window.location.replace(repo + '/');
+      }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>نجمة السماء | NAJMAT AL SAMAA — Luxury Cosmetics & Skincare</title>
-    <meta name="description" content="متجر نجمة السماء لمستحضرات التجميل والعناية بالبشرة الفاخرة مع توصيل سريع لـ 58 ولاية والدفع عند الاستلام." />
-    <meta property="og:title" content="نجمة السماء | NAJMAT AL SAMAA — Luxury Cosmetics & Skincare" />
-    <meta property="og:description" content="متجر نجمة السماء لمستحضرات التجميل والعناية بالبشرة الفاخرة مع توصيل سريع لـ 58 ولاية والدفع عند الاستلام." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="./assets/index-D5qrVJDg.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BlJPcBzK.css">
+    <title>نجمة السماء | إعادة التوجيه</title>
   </head>
-  <body class="bg-[#FAF7F5] text-[#1C1917] antialiased selection:bg-[#E8D5CE] selection:text-[#1C1917]">
-    <div id="root"></div>
+  <body class="bg-[#FAF7F5] text-[#1C1917]">
+    <div style="font-family: sans-serif; text-align: center; padding-top: 100px;">
+      <p>جاري تحويلك إلى موقع نجمة السماء...</p>
+    </div>
   </body>
 </html>
