@@ -1,0 +1,6 @@
+{
+  "name": "MAISON NOUR — Luxury Cosmetics & Skincare",
+  "description": "Editorial, sensory cosmetics & skincare with shade inclusivity, personalized routine finder, and seamless Cash on Delivery checkout.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
