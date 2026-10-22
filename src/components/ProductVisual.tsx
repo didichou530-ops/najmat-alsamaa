@@ -1,5 +1,6 @@
 import React from 'react';
 import { Product, Shade } from '../types';
+import { MEDIA_VERSION } from '../data/mediaVersion';
 
 interface ProductVisualProps {
   product: Product;
@@ -11,12 +12,13 @@ interface ProductVisualProps {
   imageUrl?: string;
 }
 
-/** يحوّل مسار الصورة المخزّن إلى رابط قابل للتحميل (مراعي مسار الأساس). */
+/** يحوّل مسار الصورة المخزّن إلى رابط قابل للتحميل (مراعي مسار الأساس + الكاش). */
 export const resolveMediaUrl = (path?: string): string => {
   if (!path) return '';
   if (/^(https?:)?\/\//.test(path) || path.startsWith('data:')) return path;
   const base = import.meta.env.BASE_URL || '/';
-  return `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+  const clean = path.replace(/^\//, '');
+  return `${base.replace(/\/$/, '')}/${clean}?v=${MEDIA_VERSION}`;
 };
 
 const hexToRgb = (hex: string): [number, number, number] => {
@@ -63,10 +65,16 @@ export const ProductVisual: React.FC<ProductVisualProps> = ({
   interactive = true,
   imageUrl
 }) => {
+  const [imageFailed, setImageFailed] = React.useState(false);
   const currentShadeHex = selectedShade ? selectedShade.hex : product.shades?.[0]?.hex || product.accentColor;
   const mediaSrc = resolveMediaUrl(imageUrl || product.image);
-  const hasPhoto = Boolean(mediaSrc);
+  const hasPhoto = Boolean(mediaSrc) && !imageFailed;
   const accent = product.accentColor || '#C87D65';
+
+  // إعادة الضبط عند تغيير المنتج
+  React.useEffect(() => {
+    setImageFailed(false);
+  }, [imageUrl, product.image]);
 
   return (
     <div
@@ -91,8 +99,38 @@ export const ProductVisual: React.FC<ProductVisualProps> = ({
             alt={product.name}
             loading="lazy"
             decoding="async"
+            onError={() => setImageFailed(true)}
             className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-[1.04]"
           />
+        </div>
+      )}
+
+      {/* ── بديل عند تعذّر تحميل الصورة (قارورة فاخرة بدل صورة مكسورة) ──── */}
+      {mediaSrc && imageFailed && (
+        <div className="relative z-10 flex flex-col items-center justify-center">
+          <div className="w-8 h-8 rounded-t-md shadow-xs border-b border-black/20 flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #FFF3B0 50%, #9C6F3B 100%)' }}>
+            <div className="w-4 h-1 bg-white/50 rounded-full" />
+          </div>
+          <div className="relative w-22 h-36 rounded-b-2xl border border-white/70 shadow-xl overflow-hidden backdrop-blur-md flex flex-col items-center justify-between p-2.5"
+            style={{
+              background: `linear-gradient(180deg, rgba(255,255,255,0.85) 0%, ${currentShadeHex} 70%)`,
+              boxShadow: 'inset 0 2px 5px rgba(255,255,255,0.8), 0 16px 28px rgba(28,25,23,0.12)'
+            }}>
+            <div className="absolute top-0 left-2 w-2.5 h-full bg-gradient-to-r from-transparent via-white/50 to-transparent skew-x-12" />
+            <div className="mt-4 px-2 py-1.5 bg-white/95 rounded shadow-xs text-center border border-black/5 w-18">
+              <span className="block text-[7px] tracking-[0.2em] font-serif uppercase text-[#1C1917] font-bold truncate">
+                Maison Nour
+              </span>
+              <span className="block text-[6px] tracking-wider text-stone-600 uppercase font-sans truncate">
+                {product.name.split(' ')[0]}
+              </span>
+            </div>
+            <div className="text-[7px] font-mono tracking-tight text-stone-700 bg-white/70 px-2 py-0.5 rounded-full">
+              {product.volume || '50 ml'}
+            </div>
+          </div>
+          <div className="w-24 h-3 bg-[#1C1917]/10 rounded-full blur-xs mt-1" />
         </div>
       )}
 
@@ -289,7 +327,7 @@ export const ProductVisual: React.FC<ProductVisualProps> = ({
       )}
 
       {/* Fallback Luxury Bottle Rendering for Custom / Admin-Created Products */}
-      {!hasPhoto && ![
+      {!mediaSrc && ![
         'prod-luminous-silk-foundation',
         'prod-cellular-serum',
         'prod-barrier-cream',

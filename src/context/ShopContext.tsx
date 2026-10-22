@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem, Shade, Order, OrderStatus } from '../types';
 import { LUXURY_PRODUCTS } from '../data/products';
+import { CATALOG_VERSION } from '../data/mediaVersion';
 import { FREE_SAMPLES_LIST, WILAYAS_LIST } from '../data/regions';
 
 export const FREE_SHIPPING_THRESHOLD_DZD = 8000;
@@ -10,7 +11,7 @@ export const FREE_SHIPPING_THRESHOLD_USD = 60;
  * إصدار الكتالوج: عند رفعه تُحدَّث المنتجات المخزّنة محلياً في المتصفح.
  * bumped كلما تغيّر محتوى products.ts حتى تصل المنتجات الجديدة لكل الزوار.
  */
-export const CATALOG_VERSION = '2026-10-22-lamsa-import';
+export { CATALOG_VERSION } from '../data/mediaVersion';
 
 interface ShopContextType {
   cart: CartItem[];

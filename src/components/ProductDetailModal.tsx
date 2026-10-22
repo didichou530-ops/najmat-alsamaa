@@ -192,6 +192,10 @@ export const ProductDetailModal: React.FC = () => {
                             src={resolveMediaUrl(src)}
                             alt={`${activeProduct.name} ${i + 1}`}
                             loading="lazy"
+                            onError={(e) => {
+                              const el = e.currentTarget;
+                              el.style.visibility = 'hidden';
+                            }}
                             className="w-full h-full object-cover"
                           />
                         </button>

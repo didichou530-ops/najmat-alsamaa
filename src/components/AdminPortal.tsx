@@ -44,6 +44,23 @@ import { useRouter } from '../context/RouterContext';
 import { OrderStatus, Order, Product, CategoryType } from '../types';
 import { WILAYAS_LIST } from '../data/regions';
 import { ProductVisual, resolveMediaUrl } from './ProductVisual';
+
+/** مصغّرة المنتج في لوحة التحكم: صورة حقيقية مع بديل عند فشل التحميل. */
+const ProductThumb: React.FC<{ prod: Product }> = ({ prod }) => {
+  const [failed, setFailed] = useState(false);
+  if (!prod.image || failed) {
+    return <ProductVisual product={prod} className="w-full h-full scale-75" />;
+  }
+  return (
+    <img
+      src={resolveMediaUrl(prod.image)}
+      alt={prod.name}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="w-full h-full object-cover"
+    />
+  );
+};
 import { ProductEditorModal } from './ProductEditorModal';
 
 export interface CustomerMessage {
@@ -1017,16 +1034,7 @@ export const AdminPortal: React.FC = () => {
                           <td className="py-3.5 px-4">
                             <div className="flex items-center gap-3">
                               <div className="w-12 h-14 rounded-xl overflow-hidden shrink-0 border border-stone-200/80 bg-[#FAF7F5]">
-                                {prod.image ? (
-                                  <img
-                                    src={resolveMediaUrl(prod.image)}
-                                    alt={prod.name}
-                                    loading="lazy"
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <ProductVisual product={prod} className="w-full h-full scale-75" />
-                                )}
+                                <ProductThumb prod={prod} />
                               </div>
                               <div className="min-w-0 max-w-[200px]">
                                 <span className="font-serif font-bold text-stone-900 block truncate text-xs">
