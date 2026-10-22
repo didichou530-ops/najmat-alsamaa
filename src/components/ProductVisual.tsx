@@ -32,6 +32,17 @@ const rgba = (hex: string, alpha: number): string => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+/** مزج لونين hex بنسبة (0 = الأول، 1 = الثاني). */
+const mixHex = (a: string, b: string, ratio: number): string => {
+  const [r1, g1, b1] = hexToRgb(a);
+  const [r2, g2, b2] = hexToRgb(b);
+  const m = (x: number, y: number) => Math.round(x + (y - x) * ratio);
+  return `#${[m(r1, r2), m(g1, g2), m(b1, b2)]
+    .map((v) => v.toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase()}`;
+};
+
 /** يحوّل تدرّج Tailwind (from-[#FFF] to-[#EEE]) إلى تدرّج CSS. */
 const gradientToCss = (bgGradient?: string): string | undefined => {
   if (!bgGradient) return undefined;
@@ -39,6 +50,10 @@ const gradientToCss = (bgGradient?: string): string | undefined => {
   if (!colors || colors.length < 2) return undefined;
   return `linear-gradient(145deg, ${colors[0]} 0%, ${colors[1]} 100%)`;
 };
+
+/** مِرقعة (plaque) Maison: اسم العلامة + الحجم — تُستخدم مع الصور الحقيقية. */
+const volumeLabel = (volume?: string): string =>
+  volume ? volume.replace(/\s+/g, ' ').trim().toUpperCase() : '';
 
 export const ProductVisual: React.FC<ProductVisualProps> = ({
   product,
@@ -51,7 +66,6 @@ export const ProductVisual: React.FC<ProductVisualProps> = ({
   const currentShadeHex = selectedShade ? selectedShade.hex : product.shades?.[0]?.hex || product.accentColor;
   const mediaSrc = resolveMediaUrl(imageUrl || product.image);
   const hasPhoto = Boolean(mediaSrc);
-  const frameGradient = gradientToCss(product.bgGradient);
   const accent = product.accentColor || '#C87D65';
 
   return (
@@ -59,34 +73,26 @@ export const ProductVisual: React.FC<ProductVisualProps> = ({
       className={`relative overflow-hidden flex items-center justify-center select-none ${className}`}
       style={{
         background: hasPhoto
-          ? `radial-gradient(circle at 50% 22%, ${rgba(accent, 0.16)} 0%, #FFFDFC 52%, ${rgba(accent, 0.12)} 100%)`
+          ? `radial-gradient(circle at 50% 26%, #FFFFFF 0%, ${mixHex(accent, '#F5EDE6', 0.80)} 56%, ${mixHex(accent, '#EADBCE', 0.68)} 100%)`
           : `radial-gradient(circle at 50% 30%, #FFFFFF 0%, #F5EDE6 60%, #EADBCE 100%)`
       }}
     >
       {/* Background soft ambient luxury halo */}
       <div
         className="absolute w-44 h-44 rounded-full blur-2xl opacity-60 pointer-events-none transition-all duration-700"
-        style={{ backgroundColor: hasPhoto ? rgba(accent, 0.22) : currentShadeHex }}
+        style={{ backgroundColor: hasPhoto ? rgba(accent, 0.20) : currentShadeHex }}
       />
 
-      {/* ── صورة المنتج الحقيقية داخل إطار ملوّن (تنسيق الألوان) ────────── */}
+      {/* ── المنتج الحقيقي: قصّة شفافة + ظلّ أرضي + انعكاس (Studio Render) ── */}
       {hasPhoto && (
-        <div className="relative z-10 flex items-center justify-center w-full h-full p-4 sm:p-6">
-          <div
-            className="relative flex items-center justify-center w-full h-full rounded-[1.75rem] overflow-hidden"
-            style={{
-              background: frameGradient || `linear-gradient(145deg, ${rgba(accent, 0.12)}, #FFFFFF)`,
-              boxShadow: `inset 0 0 0 1px ${rgba(accent, 0.22)}, 0 18px 38px -22px ${rgba(accent, 0.65)}`
-            }}
-          >
-            <img
-              src={mediaSrc}
-              alt={product.name}
-              loading="lazy"
-              decoding="async"
-              className="max-h-full max-w-full object-contain drop-shadow-[0_18px_28px_rgba(28,25,23,0.22)] transition-transform duration-500 group-hover:scale-105"
-            />
-          </div>
+        <div className="relative z-10 flex items-center justify-center w-full h-full p-3 sm:p-5">
+          <img
+            src={mediaSrc}
+            alt={product.name}
+            loading="lazy"
+            decoding="async"
+            className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-[1.04]"
+          />
         </div>
       )}
 
@@ -335,7 +341,7 @@ export const ProductVisual: React.FC<ProductVisualProps> = ({
       )}
 
       {/* Subtle Texture Swatch overlay in bottom corner */}
-      {selectedShade && (
+      {selectedShade && !hasPhoto && (
         <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2 py-1 bg-white/90 backdrop-blur-md rounded-full shadow-xs border border-stone-200/80">
           <span
             className="w-3.5 h-3.5 rounded-full shadow-xs border border-black/10 shrink-0"
@@ -347,16 +353,25 @@ export const ProductVisual: React.FC<ProductVisualProps> = ({
         </div>
       )}
 
-      {/* Brand chip with the product accent colour (real photo products) */}
-      {hasPhoto && product.brand && (
-        <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2 py-1 bg-white/90 backdrop-blur-md rounded-full shadow-xs border border-stone-200/80">
-          <span
-            className="w-3 h-3 rounded-full shadow-xs border border-black/10 shrink-0"
-            style={{ backgroundColor: accent }}
-          />
-          <span className="text-[10px] font-semibold text-stone-700 tracking-tight whitespace-nowrap uppercase">
-            {product.brand}
-          </span>
+      {/* Maison-style plaque: brand wordmark + volume (real photo products) */}
+      {hasPhoto && (product.brand || product.volume) && (
+        <div className="absolute bottom-2.5 inset-x-2.5 flex items-end justify-between gap-2 pointer-events-none">
+          {product.brand && (
+            <div className="px-2.5 py-1.5 bg-white/92 backdrop-blur-md rounded-xl shadow-xs border border-stone-200/80 flex items-center gap-1.5">
+              <span
+                className="w-2.5 h-2.5 rounded-full shadow-xs border border-black/10 shrink-0"
+                style={{ backgroundColor: accent }}
+              />
+              <span className="font-serif text-[10px] font-bold uppercase tracking-[0.18em] text-stone-800 leading-none">
+                {product.brand}
+              </span>
+            </div>
+          )}
+          {product.volume && (
+            <span className="px-2.5 py-1 bg-white/85 backdrop-blur-md rounded-full shadow-xs border border-stone-200/70 text-[9.5px] font-mono tracking-tight text-stone-600">
+              {volumeLabel(product.volume)}
+            </span>
+          )}
         </div>
       )}
     </div>
