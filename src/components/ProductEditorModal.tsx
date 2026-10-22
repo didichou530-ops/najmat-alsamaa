@@ -69,7 +69,8 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   // التسعير بالهامش: سعر الشراء + نسبة الربح يحدّدان سعر الزبون تلقائياً
   const [costPrice, setCostPrice] = useState<number>(0);
   const [marginPct, setMarginPct] = useState<number>(0);
-  const [pricingMode, setPricingMode] = useState<'manual' | 'margin'>('manual');
+  // تحرير يدوي: يعطّل الحساب التلقائي عند اختياره صراحةً (يبقى السعر يدوياً)
+  const [manualOverride, setManualOverride] = useState(false);
   const [stockCount, setStockCount] = useState<number>(35);
   const [batchNumber, setBatchNumber] = useState('NS-25A10');
   const [expirationDate, setExpirationDate] = useState('2027-10-31');
@@ -121,7 +122,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
       setPriceUSD(productToEdit.priceUSD);
       setCostPrice(productToEdit.costPrice || 0);
       setMarginPct(productToEdit.marginPct ?? 0);
-      setPricingMode(productToEdit.pricingMode || 'manual');
+      setManualOverride(productToEdit.pricingMode === 'manual' && (productToEdit.costPrice || 0) > 0);
       setStockCount(productToEdit.stockCount);
       setBatchNumber(productToEdit.batchNumber || `NS-25${Math.random().toString(36).substring(2, 5).toUpperCase()}`);
       setExpirationDate(productToEdit.expirationDate || '2027-10-31');
@@ -152,7 +153,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
       setPriceUSD(38);
       setCostPrice(0);
       setMarginPct(0);
-      setPricingMode('manual');
+      setManualOverride(false);
       setStockCount(30);
       setBatchNumber(`NS-25${Math.random().toString(36).substring(2, 5).toUpperCase()}`);
       setExpirationDate('2028-02-28');
@@ -186,19 +187,24 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
     return Math.max(50, Math.round(raw / 50) * 50);
   };
 
-  // عند تفعيل التسعير بالهامش يتحدّث سعر الزبون (والدولار) آلياً مع كل تغيير
+  // عند إدخال سعر شراء + هامش ربح يُحدَّث سعر الزبون (والدولار) **فوراً وآلياً**
   // ملاحظة: يجب أن يبقى هذا الخطاف فوق `if (!isOpen) return null;` (قواعد الخطافات)
   useEffect(() => {
-    if (pricingMode !== 'margin' || costPrice <= 0) return;
+    if (manualOverride || costPrice <= 0 || marginPct <= 0) return;
     const p = computeSuggestedPrice(costPrice, marginPct);
     setPriceDZD(p);
     setPriceUSD(Math.round(p / 135));
-  }, [pricingMode, costPrice, marginPct]);
+  }, [manualOverride, costPrice, marginPct]);
 
   if (!isOpen) return null;
 
+  // هل يُحسب السعر آلياً من الهامش؟ (يحتاج سعر شراء + هامش، ولا يُعطَّل يدوياً)
+  const autoPricing = costPrice > 0 && marginPct > 0 && !manualOverride;
   const suggestedPrice = computeSuggestedPrice(costPrice, marginPct);
   const unitProfit = suggestedPrice - costPrice;
+  const units = Number(stockCount) || 0;
+  const totalCostValue = costPrice * units;
+  const totalProfitValue = unitProfit * units;
 
   // Toggle skin types
   const handleToggleSkinType = (st: SkinType) => {
@@ -304,7 +310,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
       // بيانات التسعير الداخلية (لا تُعرض للزبون — للإدارة فقط)
       costPrice: costPrice > 0 ? Number(costPrice) : undefined,
       marginPct: marginPct > 0 ? Number(marginPct) : undefined,
-      pricingMode,
+      pricingMode: costPrice > 0 && marginPct > 0 && !manualOverride ? 'margin' : 'manual',
       rating: productToEdit?.rating || 5.0,
       reviewCount: productToEdit?.reviewCount || 12,
       badge,
@@ -709,24 +715,39 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                       </p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setPricingMode(pricingMode === 'margin' ? 'manual' : 'margin')}
-                    className={`shrink-0 text-[11px] font-bold px-3.5 py-1.5 rounded-full border transition cursor-pointer flex items-center gap-1.5 ${
-                      pricingMode === 'margin'
-                        ? 'bg-[#C87D65] text-white border-[#C87D65]'
-                        : 'bg-white text-stone-600 border-stone-200 hover:border-[#C87D65] hover:text-[#C87D65]'
-                    }`}
-                  >
-                    <Percent className="w-3.5 h-3.5" />
-                    {pricingMode === 'margin'
-                      ? lang === 'ar'
-                        ? 'الحساب التلقائي مفعّل'
-                        : 'Auto-pricing on'
-                      : lang === 'ar'
-                        ? 'تفعيل الحساب التلقائي'
-                        : 'Enable auto-pricing'}
-                  </button>
+                  {/* حالة الحساب التلقائي */}
+                  <div className="shrink-0 flex items-center gap-2 flex-wrap justify-end">
+                    {autoPricing ? (
+                      <>
+                        <span className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-emerald-600 text-white flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5" />
+                          {lang === 'ar' ? 'الحساب التلقائي مفعّل' : 'Auto-pricing on'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setManualOverride(true)}
+                          className="text-[11px] font-semibold text-stone-500 hover:text-[#C87D65] underline underline-offset-2 cursor-pointer"
+                        >
+                          {lang === 'ar' ? 'سعر يدوي' : 'Manual price'}
+                        </button>
+                      </>
+                    ) : costPrice > 0 && marginPct > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setManualOverride(false)}
+                        className="text-[11px] font-bold px-3.5 py-1.5 rounded-full border bg-white text-[#C87D65] border-[#C87D65]/40 hover:bg-[#C87D65]/5 transition cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Percent className="w-3.5 h-3.5" />
+                        {lang === 'ar' ? 'العودة للحساب التلقائي' : 'Back to auto-pricing'}
+                      </button>
+                    ) : (
+                      <span className="text-[11px] font-semibold text-stone-400 bg-stone-50 border border-stone-200 px-3 py-1.5 rounded-full">
+                        {lang === 'ar'
+                          ? 'أدخل الشراء + الهامش ليُحسب السعر تلقائياً'
+                          : 'Add cost + margin to auto-price'}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -790,27 +811,41 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                   </div>
                 </div>
 
-                {/* النتيجة: سعر الزبون المقترح + ربح الوحدة */}
+                {/* النتيجة: سعر الزبون + الربح والمجاميع المحسوبة آلياً */}
                 {costPrice > 0 && (
                   <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#FAF7F5] to-[#F3E8E1] border border-[#C87D65]/25 space-y-2">
                     <div className="flex items-baseline justify-between gap-3 flex-wrap">
                       <span className="text-xs font-semibold text-stone-600">
                         {lang === 'ar'
-                          ? 'سعر الزبون المقترح (مقرَّب لأقرب 50 د.ج)'
-                          : 'Suggested customer price (rounded to 50 DZD)'}
+                          ? autoPricing
+                            ? 'سعر البيع للزبون (مقرَّب لأقرب 50 د.ج)'
+                            : 'سعر البيع المقترح (مقرَّب لأقرب 50 د.ج)'
+                          : autoPricing
+                            ? 'Customer price (rounded to 50 DZD)'
+                            : 'Suggested customer price (rounded to 50 DZD)'}
                       </span>
                       <span className="font-mono font-bold text-lg text-[#C87D65]">
                         {formatPrice(suggestedPrice, Math.round(suggestedPrice / 135))}
-                        {pricingMode === 'margin' && (
+                        {autoPricing ? (
                           <span className="text-[10px] text-emerald-700 font-semibold ms-2">
                             ✓ {lang === 'ar' ? 'مطبَّق تلقائياً' : 'applied automatically'}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-amber-700 font-semibold ms-2">
+                            {lang === 'ar'
+                              ? marginPct > 0
+                                ? 'غير مطبَّق (سعر يدوي)'
+                                : 'أضف هامش الربح لتطبيقه'
+                              : marginPct > 0
+                                ? 'not applied (manual price)'
+                                : 'add margin to apply'}
                           </span>
                         )}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3 flex-wrap text-[11px] font-mono text-stone-600">
                       <span>
-                        {lang === 'ar' ? 'الربح للوحدة الواحدة: ' : 'Profit per unit: '}
+                        {lang === 'ar' ? 'ربح الوحدة الواحدة: ' : 'Profit per unit: '}
                         <b className="text-emerald-700">
                           {formatPrice(unitProfit, Math.round(unitProfit / 135))}
                         </b>
@@ -819,6 +854,30 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                         {formatPrice(costPrice, Math.round(costPrice / 135))} × {100 + marginPct}%
                       </span>
                     </div>
+
+                    {/* المجاميع المحسوبة آلياً: تكلفة المخزون والربح المتوقع */}
+                    {units > 0 && (
+                      <div className="pt-2 mt-1 border-t border-[#C87D65]/15 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono">
+                        <div className="flex items-center justify-between gap-2 bg-white/60 rounded-lg px-2.5 py-1.5">
+                          <span className="text-stone-500">
+                            {lang === 'ar'
+                              ? `تكلفة المخزون (${units} وحدة)`
+                              : `Stock cost (${units} units)`}
+                          </span>
+                          <b className="text-stone-800">
+                            {formatPrice(totalCostValue, Math.round(totalCostValue / 135))}
+                          </b>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 bg-white/60 rounded-lg px-2.5 py-1.5">
+                          <span className="text-stone-500">
+                            {lang === 'ar' ? 'الربح المتوقع عند بيع المخزون' : 'Expected profit when sold'}
+                          </span>
+                          <b className="text-emerald-700">
+                            +{formatPrice(totalProfitValue, Math.round(totalProfitValue / 135))}
+                          </b>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -830,7 +889,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                     <span>
                       {lang === 'ar' ? 'سعر البيع للزبون بالدينار الجزائري (DZD) *' : 'Customer price in DZD *'}
                     </span>
-                    {pricingMode === 'margin' && costPrice > 0 && (
+                    {autoPricing && (
                       <span className="text-[10px] font-bold text-[#C87D65] bg-[#C87D65]/10 px-2 py-0.5 rounded-full">
                         {lang === 'ar' ? 'محسوب من الهامش' : 'From margin'}
                       </span>
@@ -843,10 +902,10 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                       min={100}
                       step={50}
                       value={priceDZD}
-                      readOnly={pricingMode === 'margin' && costPrice > 0}
+                      readOnly={autoPricing}
                       onChange={(e) => setPriceDZD(Number(e.target.value))}
                       className={`w-full pl-4 pr-16 py-2.5 rounded-xl bg-white border border-stone-200 text-sm font-mono font-bold text-stone-900 focus:ring-1 focus:ring-[#C87D65] focus:outline-none ${
-                        pricingMode === 'margin' && costPrice > 0
+                        autoPricing
                           ? 'cursor-not-allowed text-[#C87D65] bg-[#FAF7F5]'
                           : ''
                       }`}
@@ -855,7 +914,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                       DZD
                     </span>
                   </div>
-                  {!(pricingMode === 'margin' && costPrice > 0) && (
+                  {!(autoPricing) && (
                     <button
                       type="button"
                       onClick={handleAutoCalculateUSD}
