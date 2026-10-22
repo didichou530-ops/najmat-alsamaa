@@ -55,6 +55,12 @@ export interface Product {
   category: CategoryType;
   priceDZD: number;
   priceUSD: number;
+  /** سعر الشراء (التكلفة) بالدينار — أساس حساب هامش الربح (لا يُعرض للزبون) */
+  costPrice?: number;
+  /** هامش الربح بالنسبة المئوية (مثال: 40 = +40% على سعر الشراء) */
+  marginPct?: number;
+  /** 'margin' = سعر الزبون يُحسب من الشراء + الهامش | 'manual' = سعر يدوي */
+  pricingMode?: 'manual' | 'margin';
   rating: number;
   reviewCount: number;
   badge?: 'bestseller' | 'new' | 'limited';

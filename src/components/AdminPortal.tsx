@@ -309,6 +309,11 @@ export const AdminPortal: React.FC = () => {
   const totalStockUnits = products.reduce((acc, p) => acc + p.stockCount, 0);
   const totalInventoryValueDZD = products.reduce((acc, p) => acc + p.stockCount * p.priceDZD, 0);
   const lowStockCount = products.filter((p) => p.stockCount <= 15).length;
+  // التكلفة والربح المتوقع (للمُنتجات التي أُدخل لها سعر شراء + هامش)
+  const costedProducts = products.filter((p) => (p.costPrice || 0) > 0);
+  const totalCostValueDZD = costedProducts.reduce((acc, p) => acc + p.stockCount * (p.costPrice || 0), 0);
+  const costedRetailValueDZD = costedProducts.reduce((acc, p) => acc + p.stockCount * p.priceDZD, 0);
+  const expectedProfitDZD = costedRetailValueDZD - totalCostValueDZD;
 
   // Filtered products for CMS
   const filteredProducts = products.filter((p) => {
@@ -744,10 +749,29 @@ export const AdminPortal: React.FC = () => {
                 <span>{lang === 'ar' ? 'القيمة التقديرية للمخزون' : 'Inventory Asset Value'}</span>
                 <TrendingUp className="w-4 h-4 text-emerald-600" />
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="font-mono font-bold text-xl text-stone-900">
-                  {totalInventoryValueDZD.toLocaleString()} DZD
-                </span>
+              <div className="space-y-1">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-mono font-bold text-xl text-stone-900">
+                    {totalInventoryValueDZD.toLocaleString()} DZD
+                  </span>
+                  <span className="text-[10px] text-stone-400 font-mono">
+                    {lang === 'ar' ? 'قيمة البيع' : 'retail'}
+                  </span>
+                </div>
+                {costedProducts.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] font-mono">
+                    <span className="text-stone-500">
+                      {lang === 'ar' ? 'التكلفة' : 'cost'}{' '}
+                      <b className="text-stone-700">{totalCostValueDZD.toLocaleString()}</b>
+                    </span>
+                    <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-semibold">
+                      {lang === 'ar' ? 'الربح المتوقع' : 'expected profit'} +{expectedProfitDZD.toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-stone-400">
+                      ({costedProducts.length} {lang === 'ar' ? 'منتج مُسعَّر' : 'priced items'})
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1070,6 +1094,21 @@ export const AdminPortal: React.FC = () => {
                             <span className="text-[10px] text-stone-400">
                               (${prod.priceUSD} USD)
                             </span>
+                            {(prod.costPrice || 0) > 0 && (
+                              <span
+                                className="text-[10px] text-stone-500 block mt-0.5"
+                                title={lang === 'ar' ? 'سعر الشراء وهامش الربح' : 'Purchase cost and profit margin'}
+                              >
+                                {lang === 'ar' ? 'شراء ' : 'cost '}
+                                <b className="text-stone-700">{prod.costPrice?.toLocaleString()}</b>
+                                {prod.marginPct ? (
+                                  <>
+                                    {' · '}
+                                    <b className="text-emerald-700">+{prod.marginPct}%</b>
+                                  </>
+                                ) : null}
+                              </span>
+                            )}
                           </td>
 
                           {/* Stock & Batch */}
