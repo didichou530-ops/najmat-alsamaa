@@ -320,7 +320,8 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
       isParabenFree,
       isCrueltyFree,
       volume: volume.trim() || '50 ml',
-      stockCount: Number(stockCount) || 20,
+      // ملاحظة: `|| 20` كان يحوّل المخزون صفر إلى 20 — يجب السماح بحفظ الصفر (نافد المخزون)
+      stockCount: Math.max(0, Number(stockCount) || 0),
       batchNumber: batchNumber.trim() || 'NS-25X01',
       expirationDate: expirationDate.trim() || '2028-01-01',
       bgGradient: productToEdit?.bgGradient || 'from-[#F7ECE4] to-[#EBD5C8]',

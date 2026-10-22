@@ -23,7 +23,8 @@ export const CartDrawer: React.FC = () => {
     openCheckout,
     nourPoints,
     potentialPointsEarned,
-    openAccount
+    openAccount,
+    products
   } = useShop();
 
   const { lang, currency, formatPrice, isRtl, t } = useLanguage();
@@ -34,6 +35,16 @@ export const CartDrawer: React.FC = () => {
     closeCart();
     openCheckout();
   };
+
+  // المخزون الحالي من الكتالوج الحيّ (السلة تحتفظ بنسخة المنتج وقت إضافته)
+  const liveStock = (productId: string) => {
+    const live = products.find((p) => p.id === productId);
+    return Math.max(0, live?.stockCount ?? 0);
+  };
+
+  // ⛔ تحذير المخزون: أي منتج نافد (صفر) في السلة يمنع إتمام الطلب
+  const outOfStockItems = cart.filter((i) => liveStock(i.product.id) <= 0);
+  const hasOutOfStock = outOfStockItems.length > 0;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -170,7 +181,15 @@ export const CartDrawer: React.FC = () => {
                         </span>
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="p-1 hover:bg-stone-200 text-stone-600 transition-colors"
+                          disabled={item.quantity >= Math.max(1, liveStock(item.product.id))}
+                          title={
+                            item.quantity >= Math.max(1, liveStock(item.product.id))
+                              ? lang === 'ar'
+                                ? `الحد الأقصى المتوفر (${liveStock(item.product.id)})`
+                                : `Max available (${liveStock(item.product.id)})`
+                              : undefined
+                          }
+                          className="p-1 hover:bg-stone-200 text-stone-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -184,6 +203,15 @@ export const CartDrawer: React.FC = () => {
                         )}
                       </span>
                     </div>
+
+                    {/* نافد المخزون: تنبيه داخل الصنف */}
+                    {liveStock(item.product.id) <= 0 && (
+                      <p className="mt-2 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-2.5 py-1.5">
+                        {lang === 'ar'
+                          ? 'نفدت الكمية — أزل هذا المنتج لإتمام الطلب'
+                          : 'Out of stock — remove this item to checkout'}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))
@@ -304,9 +332,38 @@ export const CartDrawer: React.FC = () => {
                 </div>
               </div>
 
+              {/* ⛔ تحذير: منتج نافد المخزون — لا يمكن إتمام الطلب */}
+              {hasOutOfStock && (
+                <div className="rounded-xl bg-rose-50 border border-rose-200 px-3.5 py-3 space-y-1.5">
+                  <p className="text-[11px] font-bold text-rose-800">
+                    {lang === 'ar'
+                      ? `نفدت الكمية من ${outOfStockItems.length === 1 ? 'منتج' : `${outOfStockItems.length} منتجات`} في سلتك`
+                      : `${outOfStockItems.length === 1 ? 'One item is' : `${outOfStockItems.length} items are`} out of stock in your bag`}
+                  </p>
+                  <ul className="space-y-1">
+                    {outOfStockItems.map((it) => (
+                      <li key={it.id} className="flex items-center justify-between gap-2 text-[11px] text-rose-700">
+                        <span className="truncate">{it.product.name}</span>
+                        <button
+                          onClick={() => removeFromCart(it.id)}
+                          className="shrink-0 underline underline-offset-2 font-semibold hover:text-rose-900 cursor-pointer"
+                        >
+                          {lang === 'ar' ? 'إزالة' : 'Remove'}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <button
                 onClick={handleStartCheckout}
-                className="w-full py-4 px-6 rounded-2xl bg-[#1C1917] hover:bg-[#2C2623] text-white text-xs font-semibold uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl transition-all cursor-pointer"
+                disabled={hasOutOfStock}
+                className={`w-full py-4 px-6 rounded-2xl text-white text-xs font-semibold uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                  hasOutOfStock
+                    ? 'bg-stone-300 cursor-not-allowed shadow-none'
+                    : 'bg-[#1C1917] hover:bg-[#2C2623] shadow-xl hover:shadow-2xl cursor-pointer'
+                }`}
               >
                 <span>{t('checkoutBtn')}</span>
                 <ArrowRight className={`w-4 h-4 ${isRtl ? 'rotate-180' : ''}`} />

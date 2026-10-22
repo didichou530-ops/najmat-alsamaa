@@ -57,6 +57,11 @@ export const ProductDetailModal: React.FC = () => {
     .map((id) => products.find((p) => p.id === id))
     .filter(Boolean) as Product[];
 
+  // حالة التوفّر: المخزون صفر ← لا يمكن إضافة المنتج للسلة
+  const stockUnits = Math.max(0, activeProduct.stockCount || 0);
+  const outOfStock = stockUnits <= 0;
+  const atMaxStock = !outOfStock && quantity >= stockUnits;
+
   const handleClose = () => {
     setActiveProduct(null);
     if (window.location.hash.includes('/product')) {
@@ -253,10 +258,18 @@ export const ProductDetailModal: React.FC = () => {
                   <span className="text-2xl font-mono font-bold text-stone-900">
                     {formatPrice(activeProduct.priceDZD, activeProduct.priceUSD)}
                   </span>
-                  <span className="text-xs text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">
-                    {lang === 'ar'
-                      ? `متوفر في المخزون (${activeProduct.stockCount} قطعة متبقية)`
-                      : `In Stock (${activeProduct.stockCount} units available)`}
+                  <span
+                    className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                      outOfStock
+                        ? 'bg-rose-50 text-rose-700 font-semibold'
+                        : 'bg-emerald-50 text-emerald-700'
+                    }`}
+                  >
+                    {outOfStock
+                      ? (lang === 'ar' ? 'نفدت الكمية' : 'Out of Stock')
+                      : (lang === 'ar'
+                          ? `متوفر في المخزن (${stockUnits} وحدة متاحة)`
+                          : `In Stock (${stockUnits} units available)`)}
                   </span>
                 </div>
               </div>
@@ -314,10 +327,15 @@ export const ProductDetailModal: React.FC = () => {
               <div className="space-y-3 pt-2">
                 <div className="flex items-center gap-3">
                   {/* Quantity Stepper */}
-                  <div className="flex items-center border border-stone-300 rounded-xl bg-white px-2 py-1 shadow-xs">
+                  <div
+                    className={`flex items-center border rounded-xl bg-white px-2 py-1 shadow-xs ${
+                      outOfStock ? 'border-stone-200 opacity-50' : 'border-stone-300'
+                    }`}
+                  >
                     <button
+                      disabled={outOfStock}
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="p-1.5 text-stone-500 hover:text-stone-900 transition-colors"
+                      className="p-1.5 text-stone-500 hover:text-stone-900 transition-colors disabled:cursor-not-allowed"
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
@@ -325,8 +343,16 @@ export const ProductDetailModal: React.FC = () => {
                       {quantity}
                     </span>
                     <button
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="p-1.5 text-stone-500 hover:text-stone-900 transition-colors"
+                      disabled={outOfStock || atMaxStock}
+                      onClick={() => setQuantity(Math.min(stockUnits, quantity + 1))}
+                      title={
+                        atMaxStock
+                          ? lang === 'ar'
+                            ? `الحد الأقصى المتوفر (${stockUnits})`
+                            : `Max available (${stockUnits})`
+                          : undefined
+                      }
+                      className="p-1.5 text-stone-500 hover:text-stone-900 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
@@ -335,16 +361,46 @@ export const ProductDetailModal: React.FC = () => {
                   {/* Add to Bag Button */}
                   <button
                     onClick={handleAddCurrentToBag}
-                    className="flex-1 py-3 px-5 rounded-xl bg-[#1C1917] hover:bg-[#2F2926] text-white text-xs font-semibold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                    disabled={outOfStock}
+                    className={`flex-1 py-3 px-5 rounded-xl text-white text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                      outOfStock
+                        ? 'bg-stone-300 cursor-not-allowed shadow-none'
+                        : 'bg-[#1C1917] hover:bg-[#2F2926] shadow-md hover:shadow-lg'
+                    }`}
                   >
-                    <span>{t('addToBag')}</span>
+                    <span>
+                      {outOfStock ? (lang === 'ar' ? 'نفدت الكمية' : 'Out of Stock') : t('addToBag')}
+                    </span>
                   </button>
                 </div>
+
+                {/* حدّ الكمية المتوفرة */}
+                {!outOfStock && atMaxStock && (
+                  <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 font-medium">
+                    {lang === 'ar'
+                      ? `وصلت للحد الأقصى المتوفر في المخزن (${stockUnits} وحدة)`
+                      : `You reached the maximum available stock (${stockUnits} units)`}
+                  </p>
+                )}
+
+                {/* نافد المخزون: رسالة بديلة */}
+                {outOfStock && (
+                  <p className="text-[11px] text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-1.5 font-medium">
+                    {lang === 'ar'
+                      ? 'هذا المنتج نفدت كميته حالياً — تواصل معنا لمعرفة موعد توفره القادم.'
+                      : 'This product is currently out of stock — contact us for the next restock.'}
+                  </p>
+                )}
 
                 {/* 1-Page Fast COD Button (Direct express order for this item) */}
                 <button
                   onClick={handleDirectCod}
-                  className="w-full py-3.5 px-5 rounded-xl bg-gradient-to-r from-[#C87D65] to-[#B56750] hover:from-[#B56750] hover:to-[#9F543E] text-white text-xs font-bold uppercase tracking-wider shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                  disabled={outOfStock}
+                  className={`w-full py-3.5 px-5 rounded-xl text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                    outOfStock
+                      ? 'bg-stone-300 cursor-not-allowed shadow-none'
+                      : 'bg-gradient-to-r from-[#C87D65] to-[#B56750] hover:from-[#B56750] hover:to-[#9F543E] shadow-lg hover:shadow-xl'
+                  }`}
                 >
                   <Truck className="w-4 h-4" />
                   <span>{t('expressCodOrder')}</span>

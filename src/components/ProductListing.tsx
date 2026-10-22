@@ -188,6 +188,8 @@ export const ProductListing: React.FC = () => {
           const currentShade =
             selectedCardShades[product.id] ||
             (product.shades ? product.shades[0] : undefined);
+          // المنتج نافد المخزون (صفر) ← لا يمكن إضافته إلى السلة
+          const outOfStock = (product.stockCount || 0) <= 0;
 
           return (
             <div
@@ -226,6 +228,17 @@ export const ProductListing: React.FC = () => {
                   </div>
                 )}
 
+                {/* Out of stock marker (always visible, blocks adding to bag) */}
+                {outOfStock && (
+                  <div
+                    className={`absolute left-3.5 ${
+                      product.badge ? 'top-12' : 'top-3.5'
+                    } px-2.5 py-0.5 rounded-full bg-rose-600/95 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider shadow-sm`}
+                  >
+                    {lang === 'ar' ? 'نفدت الكمية' : 'Out of Stock'}
+                  </div>
+                )}
+
                 {/* Hover Quick Actions Overlay */}
                 <div className="absolute bottom-3 inset-x-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <button
@@ -243,10 +256,16 @@ export const ProductListing: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (outOfStock) return;
                       addToCart(product, 1, currentShade);
                     }}
-                    className="p-2.5 rounded-xl bg-[#1C1917] hover:bg-[#C87D65] text-white transition-colors shadow-md"
-                    title={t('addToBag')}
+                    disabled={outOfStock}
+                    className={`p-2.5 rounded-xl transition-colors shadow-md ${
+                      outOfStock
+                        ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                        : 'bg-[#1C1917] hover:bg-[#C87D65] text-white'
+                    }`}
+                    title={outOfStock ? (lang === 'ar' ? 'نفدت الكمية' : 'Out of stock') : t('addToBag')}
                   >
                     <ShoppingBag className="w-4 h-4" />
                   </button>

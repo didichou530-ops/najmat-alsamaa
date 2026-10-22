@@ -378,12 +378,19 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addToCart = (product: Product, quantity = 1, shade?: Shade) => {
+    // ⛔ المنتج نافد المخزون (صفر) لا يمكن إضافته إلى السلة إطلاقاً
+    const stock = Math.max(0, product.stockCount || 0);
+    if (stock <= 0) return;
+
+    // لا يمكن طلب أكثر من الكمية المتوفرة في المخزن
+    const wanted = Math.min(Math.max(1, quantity), stock);
+    const itemId = `${product.id}_${shade ? shade.id : 'default'}`;
+
     setCart((prev) => {
-      const itemId = `${product.id}_${shade ? shade.id : 'default'}`;
       const existing = prev.find((item) => item.id === itemId);
       if (existing) {
         return prev.map((item) =>
-          item.id === itemId ? { ...item, quantity: item.quantity + quantity } : item
+          item.id === itemId ? { ...item, quantity: Math.min(item.quantity + wanted, stock) } : item
         );
       }
       return [
@@ -391,7 +398,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         {
           id: itemId,
           product,
-          quantity,
+          quantity: wanted,
           selectedShade: shade
         }
       ];
@@ -409,7 +416,13 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     setCart((prev) =>
-      prev.map((item) => (item.id === cartItemId ? { ...item, quantity: newQty } : item))
+      prev.map((item) => {
+        if (item.id !== cartItemId) return item;
+        // الكمية القصوى من المخزون **الحيّ** في الكتالوج (السلة تحتفظ بنسخة قديمة)
+        const live = products.find((p) => p.id === item.product.id);
+        const max = Math.max(1, live?.stockCount ?? item.product.stockCount ?? 1);
+        return { ...item, quantity: Math.min(newQty, max) };
+      })
     );
   };
 
@@ -593,7 +606,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isParabenFree: productData.isParabenFree ?? true,
       isCrueltyFree: productData.isCrueltyFree ?? true,
       volume: productData.volume || '50 ml',
-      stockCount: Number(productData.stockCount) || 25,
+      // السماح بحفظ المخزون = 0 (نافد المخزون) — الافتراضي 25 فقط عند غياب القيمة كلياً
+      stockCount:
+        productData.stockCount === undefined || productData.stockCount === null
+          ? 25
+          : Math.max(0, Number(productData.stockCount) || 0),
       batchNumber: productData.batchNumber || `NS-25${Math.random().toString(36).substring(2, 5).toUpperCase()}`,
       expirationDate: productData.expirationDate || '2027-12-31',
       bgGradient: productData.bgGradient || 'from-[#F7ECE4] to-[#EBD5C8]',

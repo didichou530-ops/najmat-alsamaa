@@ -189,9 +189,23 @@ export const HeroSection: React.FC = () => {
                           </span>
                           <div className="flex items-center gap-1">
                             <button
-                              onClick={() => addToCart(hs.product, 1)}
-                              className="p-1 bg-stone-900 hover:bg-[#C87D65] text-white rounded-lg transition-colors"
-                              title="Add to bag"
+                              onClick={() => {
+                                if ((hs.product.stockCount || 0) <= 0) return;
+                                addToCart(hs.product, 1);
+                              }}
+                              disabled={(hs.product.stockCount || 0) <= 0}
+                              className={`p-1 rounded-lg transition-colors ${
+                                (hs.product.stockCount || 0) <= 0
+                                  ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                                  : 'bg-stone-900 hover:bg-[#C87D65] text-white'
+                              }`}
+                              title={
+                                (hs.product.stockCount || 0) <= 0
+                                  ? lang === 'ar'
+                                    ? 'نفدت الكمية'
+                                    : 'Out of stock'
+                                  : 'Add to bag'
+                              }
                             >
                               <ShoppingBag className="w-3 h-3" />
                             </button>
