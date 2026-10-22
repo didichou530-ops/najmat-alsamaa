@@ -1,4 +1,4 @@
-export type CategoryType = 'makeup' | 'skincare' | 'haircare' | 'fragrance' | 'bundles';
+export type CategoryType = 'makeup' | 'skincare' | 'haircare' | 'fragrance' | 'bodycare' | 'oralcare' | 'bundles';
 export type SkinType = 'oily' | 'dry' | 'combination' | 'sensitive' | 'normal';
 export type SkinConcern = 'acne' | 'anti-aging' | 'hydration' | 'brightening' | 'texture' | 'pores';
 
@@ -69,6 +69,14 @@ export interface Product {
   expirationDate: string;
   bgGradient: string;
   accentColor: string;
+  /** مسار صورة المنتج داخل public/media (نسبي) أو رابط خارجي */
+  image?: string;
+  /** صور إضافية للمنتج (معرض) */
+  gallery?: string[];
+  /** العلامة التجارية */
+  brand?: string;
+  /** وسم تسويقي مترجم (أصلي 🇫🇷 / صيدلية / ...) */
+  tag?: { en: string; fr: string; ar: string };
   description: string;
   descriptionFr: string;
   descriptionAr: string;

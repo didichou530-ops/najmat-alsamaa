@@ -117,6 +117,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
             >
               <option value="all">{lang === 'ar' ? 'كافة التصنيفات' : 'All Categories'}</option>
               <option value="skincare">{lang === 'ar' ? 'العناية بالبشرة' : 'Skincare'}</option>
+              <option value="haircare">{lang === 'ar' ? 'العناية بالشعر' : 'Haircare'}</option>
+              <option value="bodycare">{lang === 'ar' ? 'العناية بالجسم' : 'Body Care'}</option>
+              <option value="oralcare">{lang === 'ar' ? 'العناية بالأسنان' : 'Oral Care'}</option>
               <option value="makeup">{lang === 'ar' ? 'المكياج' : 'Makeup'}</option>
               <option value="bundles">{lang === 'ar' ? 'المجموعات' : 'Sets & Bundles'}</option>
               <option value="fragrance">{lang === 'ar' ? 'الزيوت المعطرة' : 'Fragrance'}</option>

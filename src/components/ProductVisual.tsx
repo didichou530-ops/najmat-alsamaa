@@ -7,29 +7,88 @@ interface ProductVisualProps {
   className?: string;
   showBadges?: boolean;
   interactive?: boolean;
+  /** تجاوز صورة المنتج (لل معرض في نافذة التفاصيل) */
+  imageUrl?: string;
 }
+
+/** يحوّل مسار الصورة المخزّن إلى رابط قابل للتحميل (مراعي مسار الأساس). */
+export const resolveMediaUrl = (path?: string): string => {
+  if (!path) return '';
+  if (/^(https?:)?\/\//.test(path) || path.startsWith('data:')) return path;
+  const base = import.meta.env.BASE_URL || '/';
+  return `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+};
+
+const hexToRgb = (hex: string): [number, number, number] => {
+  const clean = (hex || '#C87D65').replace('#', '');
+  const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean;
+  const num = parseInt(full, 16);
+  if (Number.isNaN(num)) return [200, 125, 101];
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+};
+
+const rgba = (hex: string, alpha: number): string => {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+/** يحوّل تدرّج Tailwind (from-[#FFF] to-[#EEE]) إلى تدرّج CSS. */
+const gradientToCss = (bgGradient?: string): string | undefined => {
+  if (!bgGradient) return undefined;
+  const colors = bgGradient.match(/#[0-9A-Fa-f]{6}/g);
+  if (!colors || colors.length < 2) return undefined;
+  return `linear-gradient(145deg, ${colors[0]} 0%, ${colors[1]} 100%)`;
+};
 
 export const ProductVisual: React.FC<ProductVisualProps> = ({
   product,
   selectedShade,
   className = '',
   showBadges = true,
-  interactive = true
+  interactive = true,
+  imageUrl
 }) => {
   const currentShadeHex = selectedShade ? selectedShade.hex : product.shades?.[0]?.hex || product.accentColor;
+  const mediaSrc = resolveMediaUrl(imageUrl || product.image);
+  const hasPhoto = Boolean(mediaSrc);
+  const frameGradient = gradientToCss(product.bgGradient);
+  const accent = product.accentColor || '#C87D65';
 
   return (
     <div
       className={`relative overflow-hidden flex items-center justify-center select-none ${className}`}
       style={{
-        background: `radial-gradient(circle at 50% 30%, #FFFFFF 0%, #F5EDE6 60%, #EADBCE 100%)`
+        background: hasPhoto
+          ? `radial-gradient(circle at 50% 22%, ${rgba(accent, 0.16)} 0%, #FFFDFC 52%, ${rgba(accent, 0.12)} 100%)`
+          : `radial-gradient(circle at 50% 30%, #FFFFFF 0%, #F5EDE6 60%, #EADBCE 100%)`
       }}
     >
       {/* Background soft ambient luxury halo */}
       <div
         className="absolute w-44 h-44 rounded-full blur-2xl opacity-60 pointer-events-none transition-all duration-700"
-        style={{ backgroundColor: currentShadeHex }}
+        style={{ backgroundColor: hasPhoto ? rgba(accent, 0.22) : currentShadeHex }}
       />
+
+      {/* ── صورة المنتج الحقيقية داخل إطار ملوّن (تنسيق الألوان) ────────── */}
+      {hasPhoto && (
+        <div className="relative z-10 flex items-center justify-center w-full h-full p-4 sm:p-6">
+          <div
+            className="relative flex items-center justify-center w-full h-full rounded-[1.75rem] overflow-hidden"
+            style={{
+              background: frameGradient || `linear-gradient(145deg, ${rgba(accent, 0.12)}, #FFFFFF)`,
+              boxShadow: `inset 0 0 0 1px ${rgba(accent, 0.22)}, 0 18px 38px -22px ${rgba(accent, 0.65)}`
+            }}
+          >
+            <img
+              src={mediaSrc}
+              alt={product.name}
+              loading="lazy"
+              decoding="async"
+              className="max-h-full max-w-full object-contain drop-shadow-[0_18px_28px_rgba(28,25,23,0.22)] transition-transform duration-500 group-hover:scale-105"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Product-Specific Editorial Renderings */}
       {product.id === 'prod-luminous-silk-foundation' && (
@@ -224,7 +283,7 @@ export const ProductVisual: React.FC<ProductVisualProps> = ({
       )}
 
       {/* Fallback Luxury Bottle Rendering for Custom / Admin-Created Products */}
-      {![
+      {!hasPhoto && ![
         'prod-luminous-silk-foundation',
         'prod-cellular-serum',
         'prod-barrier-cream',
@@ -284,6 +343,19 @@ export const ProductVisual: React.FC<ProductVisualProps> = ({
           />
           <span className="text-[10px] font-medium text-stone-700 tracking-tight whitespace-nowrap">
             {selectedShade.name.split(' ')[0]}
+          </span>
+        </div>
+      )}
+
+      {/* Brand chip with the product accent colour (real photo products) */}
+      {hasPhoto && product.brand && (
+        <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2 py-1 bg-white/90 backdrop-blur-md rounded-full shadow-xs border border-stone-200/80">
+          <span
+            className="w-3 h-3 rounded-full shadow-xs border border-black/10 shrink-0"
+            style={{ backgroundColor: accent }}
+          />
+          <span className="text-[10px] font-semibold text-stone-700 tracking-tight whitespace-nowrap uppercase">
+            {product.brand}
           </span>
         </div>
       )}

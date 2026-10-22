@@ -54,6 +54,11 @@ export const ProductListing: React.FC = () => {
       list.sort((a, b) => b.priceDZD - a.priceDZD);
     } else if (sortBy === 'rating') {
       list.sort((a, b) => b.rating - a.rating);
+    } else {
+      //efeatured: أحدث المنتجات أولاً (الوافد الجديد) ثم الأكثر مبيعاً
+      const rank = (p: Product) =>
+        p.badge === 'new' ? 0 : p.badge === 'limited' ? 1 : p.badge === 'bestseller' ? 2 : 3;
+      list.sort((a, b) => rank(a) - rank(b));
     }
 
     return list;
@@ -62,6 +67,9 @@ export const ProductListing: React.FC = () => {
   const categories = [
     { id: 'all', label: 'All Curations', labelAr: 'الكل' },
     { id: 'skincare', label: 'Skincare', labelAr: 'العناية بالبشرة' },
+    { id: 'haircare', label: 'Haircare', labelAr: 'العناية بالشعر' },
+    { id: 'bodycare', label: 'Body Care', labelAr: 'العناية بالجسم' },
+    { id: 'oralcare', label: 'Oral Care', labelAr: 'العناية بالأسنان' },
     { id: 'makeup', label: 'Makeup', labelAr: 'المكياج' },
     { id: 'bundles', label: 'Sets & Duos', labelAr: 'المجموعات' },
     { id: 'fragrance', label: 'Sensory Oil', labelAr: 'الزيوت المعطرة' }
@@ -205,6 +213,19 @@ export const ProductListing: React.FC = () => {
                   </div>
                 )}
 
+                {/* Origin / pharmacy / haircare label */}
+                {product.tag && (
+                  <div
+                    className="absolute top-3.5 right-3.5 px-2.5 py-0.5 rounded-full bg-white/90 backdrop-blur-md border text-[10px] font-bold uppercase tracking-wider shadow-xs"
+                    style={{
+                      color: product.accentColor,
+                      borderColor: `${product.accentColor}55`
+                    }}
+                  >
+                    {lang === 'ar' ? product.tag.ar : lang === 'fr' ? product.tag.fr : product.tag.en}
+                  </div>
+                )}
+
                 {/* Hover Quick Actions Overlay */}
                 <div className="absolute bottom-3 inset-x-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <button
@@ -237,6 +258,12 @@ export const ProductListing: React.FC = () => {
                 <div>
                   {/* Clean unboxed category + volume separator */}
                   <div className="flex items-center gap-2 text-[11px] text-stone-400 uppercase tracking-widest font-mono">
+                    {product.brand && (
+                      <>
+                        <span className="text-stone-500 font-semibold">{product.brand}</span>
+                        <span aria-hidden="true">·</span>
+                      </>
+                    )}
                     <span>{product.category}</span>
                     <span aria-hidden="true">·</span>
                     <span>{product.volume}</span>

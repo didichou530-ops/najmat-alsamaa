@@ -17,7 +17,7 @@ import {
 import { useShop } from '../context/ShopContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Product, Shade, SkinType } from '../types';
-import { ProductVisual } from './ProductVisual';
+import { ProductVisual, resolveMediaUrl } from './ProductVisual';
 import { BeforeAfterSlider } from './BeforeAfterSlider';
 import { LUXURY_PRODUCTS } from '../data/products';
 
@@ -33,6 +33,7 @@ export const ProductDetailModal: React.FC = () => {
   const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
   const [isShippingOpen, setIsShippingOpen] = useState(false);
   const [reviewSkinFilter, setReviewSkinFilter] = useState<SkinType | 'all'>('all');
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   // Synchronize shade and state when active product changes
   useEffect(() => {
@@ -40,6 +41,7 @@ export const ProductDetailModal: React.FC = () => {
       setSelectedShade(activeProduct.shades?.[0]);
       setQuantity(1);
       setActiveTab('details');
+      setGalleryIndex(0);
     }
   }, [activeProduct]);
 
@@ -139,6 +141,11 @@ export const ProductDetailModal: React.FC = () => {
                       product={activeProduct}
                       selectedShade={selectedShade}
                       className="w-full h-full"
+                      imageUrl={
+                        galleryIndex > 0
+                          ? activeProduct.gallery?.[galleryIndex - 1]
+                          : activeProduct.image
+                      }
                     />
 
                     {/* Badge */}
@@ -147,7 +154,50 @@ export const ProductDetailModal: React.FC = () => {
                         {activeProduct.badge}
                       </div>
                     )}
+
+                    {/* Origin label */}
+                    {activeProduct.tag && (
+                      <div
+                        className="absolute top-4 right-4 px-3 py-1 bg-white/90 backdrop-blur-md rounded-full shadow-xs border text-[10px] font-bold uppercase tracking-wider"
+                        style={{
+                          color: activeProduct.accentColor,
+                          borderColor: `${activeProduct.accentColor}55`
+                        }}
+                      >
+                        {lang === 'ar'
+                          ? activeProduct.tag.ar
+                          : lang === 'fr'
+                            ? activeProduct.tag.fr
+                            : activeProduct.tag.en}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Real product photos gallery */}
+                  {activeProduct.image && (activeProduct.gallery?.length ?? 0) > 0 && (
+                    <div className="flex items-center gap-2.5 overflow-x-auto pb-1">
+                      {[activeProduct.image, ...(activeProduct.gallery || [])].map((src, i) => (
+                        <button
+                          key={`${src}-${i}`}
+                          onClick={() => setGalleryIndex(i)}
+                          className={`w-16 h-16 shrink-0 rounded-2xl overflow-hidden border transition-all ${
+                            galleryIndex === i
+                              ? 'border-stone-900 ring-1 ring-stone-900'
+                              : 'border-stone-200 hover:border-stone-400'
+                          }`}
+                          style={{ backgroundColor: `${activeProduct.accentColor}14` }}
+                          title={lang === 'ar' ? 'عرض الصورة' : 'View photo'}
+                        >
+                          <img
+                            src={resolveMediaUrl(src)}
+                            alt={`${activeProduct.name} ${i + 1}`}
+                            loading="lazy"
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Volume / Batch Meta */}
                   <div className="flex items-center justify-between text-xs text-stone-500 font-mono px-2">

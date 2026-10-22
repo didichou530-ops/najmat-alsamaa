@@ -43,7 +43,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useRouter } from '../context/RouterContext';
 import { OrderStatus, Order, Product, CategoryType } from '../types';
 import { WILAYAS_LIST } from '../data/regions';
-import { ProductVisual } from './ProductVisual';
+import { ProductVisual, resolveMediaUrl } from './ProductVisual';
 import { ProductEditorModal } from './ProductEditorModal';
 
 export interface CustomerMessage {
@@ -969,6 +969,8 @@ export const AdminPortal: React.FC = () => {
                   { id: 'skincare', label: lang === 'ar' ? 'عناية بالبشرة' : 'Skincare' },
                   { id: 'makeup', label: lang === 'ar' ? 'مكياج' : 'Makeup' },
                   { id: 'haircare', label: lang === 'ar' ? 'عناية بالشعر' : 'Haircare' },
+                  { id: 'bodycare', label: lang === 'ar' ? 'عناية بالجسم' : 'Body Care' },
+                  { id: 'oralcare', label: lang === 'ar' ? 'عناية بالأسنان' : 'Oral Care' },
                   { id: 'fragrance', label: lang === 'ar' ? 'عطور' : 'Fragrance' },
                   { id: 'bundles', label: lang === 'ar' ? 'باقات' : 'Bundles' }
                 ].map((cat) => (
@@ -1015,7 +1017,16 @@ export const AdminPortal: React.FC = () => {
                           <td className="py-3.5 px-4">
                             <div className="flex items-center gap-3">
                               <div className="w-12 h-14 rounded-xl overflow-hidden shrink-0 border border-stone-200/80 bg-[#FAF7F5]">
-                                <ProductVisual product={prod} className="w-full h-full scale-75" />
+                                {prod.image ? (
+                                  <img
+                                    src={resolveMediaUrl(prod.image)}
+                                    alt={prod.name}
+                                    loading="lazy"
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <ProductVisual product={prod} className="w-full h-full scale-75" />
+                                )}
                               </div>
                               <div className="min-w-0 max-w-[200px]">
                                 <span className="font-serif font-bold text-stone-900 block truncate text-xs">

@@ -6,6 +6,12 @@ import { FREE_SAMPLES_LIST, WILAYAS_LIST } from '../data/regions';
 export const FREE_SHIPPING_THRESHOLD_DZD = 8000;
 export const FREE_SHIPPING_THRESHOLD_USD = 60;
 
+/**
+ * إصدار الكتالوج: عند رفعه تُحدَّث المنتجات المخزّنة محلياً في المتصفح.
+ * bumped كلما تغيّر محتوى products.ts حتى تصل المنتجات الجديدة لكل الزوار.
+ */
+export const CATALOG_VERSION = '2026-10-22-lamsa-import';
+
 interface ShopContextType {
   cart: CartItem[];
   selectedSamples: string[];
@@ -297,8 +303,28 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Products & Catalog state (stored in localStorage)
   const [products, setProducts] = useState<Product[]>(() => {
     try {
-      const saved = localStorage.getItem('mn_products');
-      return saved ? JSON.parse(saved) : LUXURY_PRODUCTS;
+      const savedRaw = localStorage.getItem('mn_products');
+      const savedVersion = localStorage.getItem('mn_catalog_version');
+      const tombstones: string[] = JSON.parse(localStorage.getItem('mn_deleted_products') || '[]');
+
+      if (!savedRaw) {
+        localStorage.setItem('mn_catalog_version', CATALOG_VERSION);
+        return LUXURY_PRODUCTS;
+      }
+
+      const saved: Product[] = JSON.parse(savedRaw);
+      if (savedVersion === CATALOG_VERSION) return saved;
+
+      // تغيّر إصدار الكتالوج: نحدّث المنتجات الأساسية ونحتفظ بما أضافه المدير
+      const seedIds = new Set(LUXURY_PRODUCTS.map((p) => p.id));
+      const custom = saved.filter(
+        (p) => !seedIds.has(p.id) && !tombstones.includes(p.id)
+      );
+      const refreshed = LUXURY_PRODUCTS.filter((p) => !tombstones.includes(p.id));
+      const merged = [...refreshed, ...custom];
+      localStorage.setItem('mn_catalog_version', CATALOG_VERSION);
+      localStorage.setItem('mn_products', JSON.stringify(merged));
+      return merged;
     } catch {
       return LUXURY_PRODUCTS;
     }
@@ -601,11 +627,22 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (activeProduct && activeProduct.id === productId) {
       setActiveProduct(null);
     }
+    // نترك أثراً للمنتج المحذوف حتى لا يعود عند تحديث إصدار الكتالوج
+    try {
+      const tombstones: string[] = JSON.parse(localStorage.getItem('mn_deleted_products') || '[]');
+      if (!tombstones.includes(productId)) {
+        localStorage.setItem('mn_deleted_products', JSON.stringify([...tombstones, productId]));
+      }
+    } catch {
+      /* تجاهل */
+    }
   };
 
   const resetProductsToDefault = () => {
     setProducts(LUXURY_PRODUCTS);
     localStorage.setItem('mn_products', JSON.stringify(LUXURY_PRODUCTS));
+    localStorage.setItem('mn_catalog_version', CATALOG_VERSION);
+    localStorage.removeItem('mn_deleted_products');
   };
 
   return (

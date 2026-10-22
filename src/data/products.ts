@@ -1,4 +1,5 @@
 import { Product } from '../types';
+import { LAMSHA_PRODUCTS } from './lamsaProducts';
 
 export const LUXURY_PRODUCTS: Product[] = [
   {
@@ -770,5 +771,7 @@ export const LUXURY_PRODUCTS: Product[] = [
     ],
     routineBundleIds: ['prod-barrier-cream'],
     reviews: []
-  }
+  },
+  // ── منتجات لَمسة المستوردة (صور حقيقية + تنسيق ألوان) ──────────────────
+  ...LAMSHA_PRODUCTS
 ];
