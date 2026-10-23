@@ -45,11 +45,11 @@ export const OrderTracker: React.FC = () => {
 
   // Step definitions for visual progression
   const steps = [
-    { key: 'new', label: 'Order Registered', labelAr: 'تسجيل الطلبية', icon: Clock },
-    { key: 'confirmed', label: 'Intent Verified', labelAr: 'تأكيد الطلبية هاتفياً', icon: CheckCircle2 },
-    { key: 'packed', label: 'Packed & Stamped', labelAr: 'التجهيز والتغليف الفاخر', icon: Package },
-    { key: 'shipped', label: 'In Transit (Yalidine)', labelAr: 'مع شركة التوصيل', icon: Truck },
-    { key: 'delivered', label: 'Delivered (COD Paid)', labelAr: 'تم التسليم والتحصيل', icon: CheckCircle2 }
+    { key: 'new', label: 'Order Registered', labelAr: 'تسجيل الطلبية', labelFr: 'Commande Enregistrée', icon: Clock },
+    { key: 'confirmed', label: 'Intent Verified', labelAr: 'تأكيد الطلبية هاتفياً', labelFr: 'Intention Vérifiée', icon: CheckCircle2 },
+    { key: 'packed', label: 'Packed & Stamped', labelAr: 'التجهيز والتغليف الفاخر', labelFr: 'Préparé & Étiqueté', icon: Package },
+    { key: 'shipped', label: 'In Transit (Yalidine)', labelAr: 'مع شركة التوصيل', labelFr: 'En Transit (Yalidine)', icon: Truck },
+    { key: 'delivered', label: 'Delivered (COD Paid)', labelAr: 'تم التسليم والتحصيل', labelFr: 'Livré (COD Payé)', icon: CheckCircle2 }
   ];
 
   const getStepStatus = (stepKey: string, currentStatus: string) => {
@@ -73,10 +73,10 @@ export const OrderTracker: React.FC = () => {
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 hover:text-stone-900 transition-colors cursor-pointer"
         >
           <ArrowLeft className={`w-4 h-4 ${isRtl ? 'rotate-180' : ''}`} />
-          <span>{lang === 'ar' ? 'العودة للمتجر (#/)' : 'Back to Boutique (#/)'}</span>
+          <span>{lang === 'ar' ? 'العودة للمتجر (#/)' : lang === 'fr' ? 'Retour à la Boutique (#/)' : 'Back to Boutique (#/)'}</span>
         </button>
         <span className="text-xs font-mono text-stone-400">
-          {lang === 'ar' ? 'تتبع شحنات متجر نجمة السماء' : 'NAJMAT AL SAMAA Logistics Tracker'}
+          {lang === 'ar' ? 'تتبع شحنات متجر نجمة السماء' : lang === 'fr' ? 'Suivi Logistique NAJMAT AL SAMAA' : 'NAJMAT AL SAMAA Logistics Tracker'}
         </span>
       </div>
 
@@ -203,7 +203,7 @@ export const OrderTracker: React.FC = () => {
                             isDone ? 'text-stone-900 font-bold' : 'text-stone-400'
                           }`}
                         >
-                          {lang === 'ar' ? st.labelAr : st.label}
+                          {lang === 'ar' ? st.labelAr : lang === 'fr' ? (st.labelFr || st.label) : st.label}
                         </span>
                       </div>
                     );

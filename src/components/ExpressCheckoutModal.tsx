@@ -3,6 +3,7 @@ import { X, ShieldCheck, Truck, MapPin, Phone, User, CheckCircle2, AlertCircle }
 import { useShop } from '../context/ShopContext';
 import { useLanguage } from '../context/LanguageContext';
 import { WILAYAS_LIST } from '../data/regions';
+import { productName, pickText } from '../utils/localize';
 import { ProductVisual } from './ProductVisual';
 
 export const ExpressCheckoutModal: React.FC = () => {
@@ -215,7 +216,7 @@ export const ExpressCheckoutModal: React.FC = () => {
                   >
                     {WILAYAS_LIST.map((w) => (
                       <option key={w.code} value={w.code}>
-                        {lang === 'ar' ? w.nameAr : w.name}
+                        {pickText(lang, w.name, w.name, w.nameAr)}
                       </option>
                     ))}
                   </select>
@@ -396,7 +397,7 @@ export const ExpressCheckoutModal: React.FC = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="text-xs font-serif font-bold text-stone-900 truncate">
-                          {lang === 'ar' ? (directCheckoutItem.product.nameAr || directCheckoutItem.product.name) : directCheckoutItem.product.name}
+                          {productName(directCheckoutItem.product, lang)}
                         </h4>
                         {directCheckoutItem.shade && (
                           <span className="text-[10px] text-stone-500 block truncate">
@@ -416,7 +417,7 @@ export const ExpressCheckoutModal: React.FC = () => {
                       <div key={it.id} className="flex items-center justify-between text-xs">
                         <div className="min-w-0 pr-2 rtl:pr-0 rtl:pl-2">
                           <span className="font-medium text-stone-900 truncate block">
-                            {lang === 'ar' ? (it.product.nameAr || it.product.name) : it.product.name}
+                            {productName(it.product, lang)}
                           </span>
                           {it.selectedShade && (
                             <span className="text-[10px] text-stone-500 block">

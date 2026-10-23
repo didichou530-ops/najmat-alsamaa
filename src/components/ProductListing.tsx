@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useShop } from '../context/ShopContext';
 import { useRouter } from '../context/RouterContext';
 import { LUXURY_PRODUCTS } from '../data/products';
+import { productName, productTagline, outOfStockLabel } from '../utils/localize';
 import { Product, SkinConcern, SkinType, Shade } from '../types';
 import { ProductVisual } from './ProductVisual';
 
@@ -235,7 +236,7 @@ export const ProductListing: React.FC = () => {
                       product.badge ? 'top-12' : 'top-3.5'
                     } px-2.5 py-0.5 rounded-full bg-rose-600/95 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider shadow-sm`}
                   >
-                    {lang === 'ar' ? 'نفدت الكمية' : 'Out of Stock'}
+                    {outOfStockLabel(lang)}
                   </div>
                 )}
 
@@ -265,7 +266,7 @@ export const ProductListing: React.FC = () => {
                         ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
                         : 'bg-[#1C1917] hover:bg-[#C87D65] text-white'
                     }`}
-                    title={outOfStock ? (lang === 'ar' ? 'نفدت الكمية' : 'Out of stock') : t('addToBag')}
+                    title={outOfStock ? outOfStockLabel(lang) : t('addToBag')}
                   >
                     <ShoppingBag className="w-4 h-4" />
                   </button>
@@ -290,11 +291,11 @@ export const ProductListing: React.FC = () => {
 
                   {/* Product Title */}
                   <h3 className="font-serif font-bold text-base text-stone-900 mt-1 line-clamp-1 group-hover:text-[#C87D65] transition-colors">
-                    {lang === 'ar' ? (product.nameAr || product.name) : product.name}
+                    {productName(product, lang)}
                   </h3>
 
                   <p className="text-xs text-stone-500 font-sans line-clamp-2 mt-1 leading-relaxed">
-                    {lang === 'ar' ? product.taglineAr : product.tagline}
+                    {productTagline(product, lang)}
                   </p>
                 </div>
 
@@ -302,7 +303,7 @@ export const ProductListing: React.FC = () => {
                 {product.shades && product.shades.length > 0 && (
                   <div className="pt-2 border-t border-stone-100 flex items-center justify-between">
                     <span className="text-[10px] text-stone-400 font-mono">
-                      {product.shades.length} {lang === 'ar' ? 'درجات لونية:' : 'Shades:'}
+                      {product.shades.length} {lang === 'ar' ? 'درجات لونية:' : lang === 'fr' ? 'Teintes :' : 'Shades:'}
                     </span>
                     <div className="flex items-center gap-1.5">
                       {product.shades.slice(0, 6).map((sh) => (

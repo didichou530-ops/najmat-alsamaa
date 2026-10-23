@@ -44,6 +44,7 @@ import { useRouter } from '../context/RouterContext';
 import { OrderStatus, Order, Product, CategoryType } from '../types';
 import { WILAYAS_LIST } from '../data/regions';
 import { ProductVisual, resolveMediaUrl } from './ProductVisual';
+import { productName, productTagline } from '../utils/localize';
 
 /** مصغّرة المنتج في لوحة التحكم: صورة حقيقية مع بديل عند فشل التحميل. */
 const ProductThumb: React.FC<{ prod: Product }> = ({ prod }) => {
@@ -873,7 +874,7 @@ export const AdminPortal: React.FC = () => {
 
             <div className="p-4 bg-white rounded-2xl border border-stone-200/90 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-xs text-stone-500">
-                <span>{lang === 'ar' ? 'أصناف نفدت تماماً' : 'Out of Stock'}</span>
+                <span>{lang === 'ar' ? 'أصناف نفدت تماماً' : lang === 'fr' ? 'Rupture de stock' : 'Out of Stock'}</span>
                 <XCircle className="w-4 h-4 text-red-500" />
               </div>
               <div className="flex items-baseline gap-2">
@@ -1062,10 +1063,10 @@ export const AdminPortal: React.FC = () => {
                               </div>
                               <div className="min-w-0 max-w-[200px]">
                                 <span className="font-serif font-bold text-stone-900 block truncate text-xs">
-                                  {lang === 'ar' ? prod.nameAr || prod.name : prod.name}
+                                  {productName(prod, lang)}
                                 </span>
                                 <span className="text-[10px] text-stone-500 block truncate">
-                                  {lang === 'ar' ? prod.taglineAr || prod.tagline : prod.tagline}
+                                  {productTagline(prod, lang)}
                                 </span>
                                 {prod.badge && (
                                   <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-[#C87D65]/15 text-[#A8583F] uppercase">
@@ -1440,7 +1441,7 @@ export const AdminPortal: React.FC = () => {
                           {prod.category} · {prod.batchNumber}
                         </span>
                         <h4 className="font-serif font-bold text-sm text-stone-900 line-clamp-1">
-                          {lang === 'ar' ? prod.nameAr || prod.name : prod.name}
+                          {productName(prod, lang)}
                         </h4>
                       </div>
                       <span
@@ -1453,8 +1454,8 @@ export const AdminPortal: React.FC = () => {
                         }`}
                       >
                         {isOutOfStock
-                          ? (lang === 'ar' ? 'نفد من المخزون' : 'Out of Stock')
-                          : `${prod.stockCount} ${lang === 'ar' ? 'قطعة' : 'units'}`}
+                          ? (lang === 'ar' ? 'نفد من المخزون' : lang === 'fr' ? 'Rupture de stock' : 'Out of Stock')
+                          : `${prod.stockCount} ${lang === 'ar' ? 'قطعة' : lang === 'fr' ? 'unités' : 'units'}`}
                       </span>
                     </div>
 
@@ -1816,7 +1817,7 @@ export const AdminPortal: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <span className="font-serif font-bold text-xs text-stone-900 block truncate">
-                  {lang === 'ar' ? deleteConfirmProduct.nameAr || deleteConfirmProduct.name : deleteConfirmProduct.name}
+                  {productName(deleteConfirmProduct, lang)}
                 </span>
                 <span className="text-[10px] text-stone-500 font-mono block">
                   {deleteConfirmProduct.category} · {formatPrice(deleteConfirmProduct.priceDZD, deleteConfirmProduct.priceUSD)}

@@ -20,6 +20,19 @@ import { Product, Shade, SkinType } from '../types';
 import { ProductVisual, resolveMediaUrl } from './ProductVisual';
 import { BeforeAfterSlider } from './BeforeAfterSlider';
 import { LUXURY_PRODUCTS } from '../data/products';
+import {
+  productName,
+  productTagline,
+  activeName,
+  activeBenefit,
+  stepTitle,
+  stepDesc,
+  outOfStockLabel,
+  inStockLabel,
+  maxAvailable,
+  maxStockHint,
+  restockNotice
+} from '../utils/localize';
 
 export const ProductDetailModal: React.FC = () => {
   const { products, activeProduct, setActiveProduct, addToCart, openCheckout } = useShop();
@@ -92,7 +105,7 @@ export const ProductDetailModal: React.FC = () => {
         <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 bg-white/90 backdrop-blur-md border-b border-stone-200/80">
           <div className="flex items-center gap-2 text-xs text-stone-500 font-serif">
             <span className="uppercase tracking-widest text-[#C87D65] font-sans font-semibold">
-              {lang === 'ar' ? 'تشكيلة نجمة السماء الفاخرة' : 'Najmat Al Samaa Curation'}
+              {lang === 'ar' ? 'تشكيلة نجمة السماء الفاخرة' : lang === 'fr' ? 'Sélection Najmat Al Samaa' : 'Najmat Al Samaa Curation'}
             </span>
             <span>·</span>
             <span className="capitalize">{activeProduct.category}</span>
@@ -122,7 +135,7 @@ export const ProductDetailModal: React.FC = () => {
                         : 'text-stone-600 hover:text-stone-900'
                     }`}
                   >
-                    {lang === 'ar' ? 'المستحضر والدرجات' : 'Studio Visual & Shade'}
+                    {lang === 'ar' ? 'المستحضر والدرجات' : lang === 'fr' ? 'Visuel Studio & Teinte' : 'Studio Visual & Shade'}
                   </button>
                   <button
                     onClick={() => setActiveTab('beforeAfter')}
@@ -133,7 +146,7 @@ export const ProductDetailModal: React.FC = () => {
                     }`}
                   >
                     <Sparkles className="w-3.5 h-3.5 text-[#C87D65]" />
-                    <span>{lang === 'ar' ? 'مقارنة قبل وبعد' : 'Before / After Slider'}</span>
+                    <span>{lang === 'ar' ? 'مقارنة قبل وبعد' : lang === 'fr' ? 'Avant / Après' : 'Before / After Slider'}</span>
                   </button>
                 </div>
               )}
@@ -191,7 +204,7 @@ export const ProductDetailModal: React.FC = () => {
                               : 'border-stone-200 hover:border-stone-400'
                           }`}
                           style={{ backgroundColor: `${activeProduct.accentColor}14` }}
-                          title={lang === 'ar' ? 'عرض الصورة' : 'View photo'}
+                          title={lang === 'ar' ? 'عرض الصورة' : lang === 'fr' ? 'Voir la photo' : 'View photo'}
                         >
                           <img
                             src={resolveMediaUrl(src)}
@@ -242,15 +255,15 @@ export const ProductDetailModal: React.FC = () => {
                     {activeProduct.rating.toFixed(1)}
                   </span>
                   <span className="text-xs text-stone-400">
-                    ({activeProduct.reviewCount} {lang === 'ar' ? 'تقييم موثق' : 'verified reviews'})
+                    ({activeProduct.reviewCount} {lang === 'ar' ? 'تقييم موثق' : lang === 'fr' ? 'avis vérifiés' : 'verified reviews'})
                   </span>
                 </div>
 
                 <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900 leading-tight">
-                  {lang === 'ar' ? (activeProduct.nameAr || activeProduct.name) : activeProduct.name}
+                  {productName(activeProduct, lang)}
                 </h1>
                 <p className="text-xs text-stone-600 leading-relaxed font-sans">
-                  {lang === 'ar' ? activeProduct.taglineAr : activeProduct.tagline}
+                  {productTagline(activeProduct, lang)}
                 </p>
 
                 {/* Price Display */}
@@ -265,11 +278,7 @@ export const ProductDetailModal: React.FC = () => {
                         : 'bg-emerald-50 text-emerald-700'
                     }`}
                   >
-                    {outOfStock
-                      ? (lang === 'ar' ? 'نفدت الكمية' : 'Out of Stock')
-                      : (lang === 'ar'
-                          ? `متوفر في المخزن (${stockUnits} وحدة متاحة)`
-                          : `In Stock (${stockUnits} units available)`)}
+                    {outOfStock ? outOfStockLabel(lang) : inStockLabel(lang, stockUnits)}
                   </span>
                 </div>
               </div>
@@ -345,13 +354,7 @@ export const ProductDetailModal: React.FC = () => {
                     <button
                       disabled={outOfStock || atMaxStock}
                       onClick={() => setQuantity(Math.min(stockUnits, quantity + 1))}
-                      title={
-                        atMaxStock
-                          ? lang === 'ar'
-                            ? `الحد الأقصى المتوفر (${stockUnits})`
-                            : `Max available (${stockUnits})`
-                          : undefined
-                      }
+                      title={atMaxStock ? maxAvailable(lang, stockUnits) : undefined}
                       className="p-1.5 text-stone-500 hover:text-stone-900 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -369,7 +372,7 @@ export const ProductDetailModal: React.FC = () => {
                     }`}
                   >
                     <span>
-                      {outOfStock ? (lang === 'ar' ? 'نفدت الكمية' : 'Out of Stock') : t('addToBag')}
+                      {outOfStock ? outOfStockLabel(lang) : t('addToBag')}
                     </span>
                   </button>
                 </div>
@@ -377,18 +380,14 @@ export const ProductDetailModal: React.FC = () => {
                 {/* حدّ الكمية المتوفرة */}
                 {!outOfStock && atMaxStock && (
                   <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 font-medium">
-                    {lang === 'ar'
-                      ? `وصلت للحد الأقصى المتوفر في المخزن (${stockUnits} وحدة)`
-                      : `You reached the maximum available stock (${stockUnits} units)`}
+                    {maxStockHint(lang, stockUnits)}
                   </p>
                 )}
 
                 {/* نافد المخزون: رسالة بديلة */}
                 {outOfStock && (
                   <p className="text-[11px] text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-1.5 font-medium">
-                    {lang === 'ar'
-                      ? 'هذا المنتج نفدت كميته حالياً — تواصل معنا لمعرفة موعد توفره القادم.'
-                      : 'This product is currently out of stock — contact us for the next restock.'}
+                    {restockNotice(lang)}
                   </p>
                 )}
 
@@ -409,12 +408,12 @@ export const ProductDetailModal: React.FC = () => {
                 <div className="flex items-center justify-center gap-4 text-[11px] text-stone-500 pt-1">
                   <span className="flex items-center gap-1">
                     <Truck className="w-3.5 h-3.5 text-stone-700" />
-                    <span>{lang === 'ar' ? 'توصيل خلال 48 ساعة (58 ولاية)' : '48h Delivery (58 Wilayas)'}</span>
+                    <span>{lang === 'ar' ? 'توصيل خلال 48 ساعة (58 ولاية)' : lang === 'fr' ? 'Livraison 48h (58 Wilayas)' : '48h Delivery (58 Wilayas)'}</span>
                   </span>
                   <span>·</span>
                   <span className="flex items-center gap-1">
                     <ShieldCheck className="w-3.5 h-3.5 text-stone-700" />
-                    <span>{lang === 'ar' ? 'الدفع عند الاستلام نقداً' : 'Cash on Delivery'}</span>
+                    <span>{lang === 'ar' ? 'الدفع عند الاستلام نقداً' : lang === 'fr' ? 'Paiement à la livraison' : 'Cash on Delivery'}</span>
                   </span>
                 </div>
               </div>
@@ -431,7 +430,7 @@ export const ProductDetailModal: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-[#C87D65]" />
-                  <span>{lang === 'ar' ? `${t('keyIngredients')} والتركيبة التفصيلية` : `${t('keyIngredients')} & Full Formula`}</span>
+                  <span>{lang === 'ar' ? `${t('keyIngredients')} والتركيبة التفصيلية` : lang === 'fr' ? `${t('keyIngredients')} & Formule Complète` : `${t('keyIngredients')} & Full Formula`}</span>
                 </div>
                 {isIngredientsOpen ? (
                   <ChevronUp className="w-4 h-4 text-stone-400" />
@@ -451,7 +450,7 @@ export const ProductDetailModal: React.FC = () => {
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-serif font-bold text-xs text-stone-900">
-                            {lang === 'ar' ? active.nameAr : active.name}
+                            {activeName(active, lang)}
                           </span>
                           {active.concentration && (
                             <span className="text-[10px] font-mono font-bold text-[#C87D65]">
@@ -460,7 +459,7 @@ export const ProductDetailModal: React.FC = () => {
                           )}
                         </div>
                         <p className="text-[11px] text-stone-600 leading-relaxed font-sans">
-                          {lang === 'ar' ? active.benefitAr : active.benefit}
+                          {activeBenefit(active, lang)}
                         </p>
                       </div>
                     ))}
@@ -469,7 +468,7 @@ export const ProductDetailModal: React.FC = () => {
                   {/* Full INCI Ingredients List */}
                   <div className="pt-2">
                     <span className="text-[10px] font-mono uppercase tracking-wider text-stone-400 block mb-1">
-                      {lang === 'ar' ? 'قائمة المكونات الكاملة والمعتمدة (INCI):' : 'Full INCI Declaration:'}
+                      {lang === 'ar' ? 'قائمة المكونات الكاملة والمعتمدة (INCI):' : lang === 'fr' ? 'Déclaration INCI Complète :' : 'Full INCI Declaration:'}
                     </span>
                     <p className="text-[11px] text-stone-500 font-mono leading-relaxed bg-stone-50 p-3 rounded-xl border border-stone-100">
                       {activeProduct.ingredients.join(', ')}
@@ -505,10 +504,10 @@ export const ProductDetailModal: React.FC = () => {
                           0{step.step}.
                         </span>
                         <h4 className="font-serif font-bold text-xs text-stone-900">
-                          {lang === 'ar' ? step.titleAr : step.title}
+                          {stepTitle(step, lang)}
                         </h4>
                         <p className="text-[11px] text-stone-600 leading-relaxed font-sans">
-                          {lang === 'ar' ? step.descAr : step.desc}
+                          {stepDesc(step, lang)}
                         </p>
                       </div>
                     ))}
@@ -525,7 +524,9 @@ export const ProductDetailModal: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <Truck className="w-4 h-4 text-stone-700" />
-                  <span>{lang === 'ar' ? 'معلومات التوصيل والشحن (الدفع عند الاستلام)' : 'Livraison & Modalités Paiement (Cash on Delivery)'}</span>
+                  <span>{lang === 'ar' ? 'معلومات التوصيل والشحن (الدفع عند الاستلام)'
+                    : lang === 'fr' ? 'Livraison & Modalités Paiement (Cash on Delivery)'
+                    : 'Shipping & Payment Policy (Cash on Delivery)'}</span>
                 </div>
                 {isShippingOpen ? (
                   <ChevronUp className="w-4 h-4 text-stone-400" />
@@ -548,7 +549,7 @@ export const ProductDetailModal: React.FC = () => {
                         • <strong>شحن مجاني وهدايا فاخرة:</strong> توصيل مجاني لكافة الولايات للطلبيات التي تتجاوز 8,000 دج + عينتان فاخرتان مجاناً مع كل طلبية.
                       </p>
                     </>
-                  ) : (
+                    ) : lang === 'fr' ? (
                     <>
                       <p>
                         • <strong>Livraison Express 48h :</strong> Expédition quotidienne par notre partenaire Yalidine Express sur 58 Wilayas (à domicile ou en agence Stop-Desk).
@@ -558,6 +559,18 @@ export const ProductDetailModal: React.FC = () => {
                       </p>
                       <p>
                         • <strong>Seuil Gratuité :</strong> Livraison offerte dès 8 000 DZD d'achats + 2 échantillons deluxe offerts dans chaque commande.
+                      </p>
+                    </>
+) : (
+                    <>
+                      <p>
+                        <strong>Express 48h Delivery:</strong> Daily shipping with our partner Yalidine Express to all 58 Wilayas (home delivery or Stop-Desk pickup).
+                      </p>
+                      <p>
+                        <strong>Cash on Delivery:</strong> You pay nothing in advance. Hand the exact amount in cash to the courier when the parcel is delivered.
+                      </p>
+                      <p>
+                        <strong>Free Shipping Threshold:</strong> Free delivery on orders from 8,000 DZD + 2 complimentary deluxe samples in every order.
                       </p>
                     </>
                   )}

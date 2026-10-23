@@ -3,6 +3,7 @@ import { X, Trash2, Plus, Minus, ShoppingBag, Gift, Truck, ArrowRight, Sparkles,
 import { useShop, FREE_SHIPPING_THRESHOLD_DZD, FREE_SHIPPING_THRESHOLD_USD } from '../context/ShopContext';
 import { useLanguage } from '../context/LanguageContext';
 import { FREE_SAMPLES_LIST } from '../data/regions';
+import { productName, pickText, maxAvailable, removeFromBagNotice, bagOosBanner } from '../utils/localize';
 import { ProductVisual } from './ProductVisual';
 
 export const CartDrawer: React.FC = () => {
@@ -104,9 +105,9 @@ export const CartDrawer: React.FC = () => {
               />
             </div>
             <div className="flex justify-between items-center text-[10px] text-stone-500 mt-1 font-mono">
-              <span>{shippingProgressPercent}% {lang === 'ar' ? 'مكتمل' : 'Unlocked'}</span>
+              <span>{shippingProgressPercent}% {lang === 'ar' ? 'مكتمل' : lang === 'fr' ? 'Débloqué' : 'Unlocked'}</span>
               <span>
-                {lang === 'ar' ? 'الحد المجاني:' : 'Goal:'} {formatPrice(FREE_SHIPPING_THRESHOLD_DZD, FREE_SHIPPING_THRESHOLD_USD)}
+                {lang === 'ar' ? 'الحد المجاني:' : lang === 'fr' ? 'Objectif :' : 'Goal:'} {formatPrice(FREE_SHIPPING_THRESHOLD_DZD, FREE_SHIPPING_THRESHOLD_USD)}
               </span>
             </div>
           </div>
@@ -146,7 +147,7 @@ export const CartDrawer: React.FC = () => {
                     <div>
                       <div className="flex items-start justify-between gap-1">
                         <h4 className="font-serif font-bold text-xs text-stone-900 leading-snug truncate">
-                          {lang === 'ar' ? (item.product.nameAr || item.product.name) : item.product.name}
+                          {productName(item.product, lang)}
                         </h4>
                         <button
                           onClick={() => removeFromCart(item.id)}
@@ -184,9 +185,7 @@ export const CartDrawer: React.FC = () => {
                           disabled={item.quantity >= Math.max(1, liveStock(item.product.id))}
                           title={
                             item.quantity >= Math.max(1, liveStock(item.product.id))
-                              ? lang === 'ar'
-                                ? `الحد الأقصى المتوفر (${liveStock(item.product.id)})`
-                                : `Max available (${liveStock(item.product.id)})`
+                              ? maxAvailable(lang, liveStock(item.product.id))
                               : undefined
                           }
                           className="p-1 hover:bg-stone-200 text-stone-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
@@ -207,9 +206,7 @@ export const CartDrawer: React.FC = () => {
                     {/* نافد المخزون: تنبيه داخل الصنف */}
                     {liveStock(item.product.id) <= 0 && (
                       <p className="mt-2 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-2.5 py-1.5">
-                        {lang === 'ar'
-                          ? 'نفدت الكمية — أزل هذا المنتج لإتمام الطلب'
-                          : 'Out of stock — remove this item to checkout'}
+                        {removeFromBagNotice(lang)}
                       </p>
                     )}
                   </div>
@@ -262,7 +259,7 @@ export const CartDrawer: React.FC = () => {
                           </span>
                         </div>
                         <span className="font-serif font-medium text-stone-900 line-clamp-1 text-[11px]">
-                          {lang === 'ar' ? sample.nameAr : sample.name}
+                          {pickText(lang, sample.name, sample.name, sample.nameAr)}
                         </span>
                         <span className="text-[10px] text-stone-400 font-mono mt-0.5">
                           {sample.volume} · {sample.category}
@@ -287,14 +284,14 @@ export const CartDrawer: React.FC = () => {
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-[11px] font-bold font-serif text-stone-900 leading-tight">
-                        +{potentialPointsEarned} {lang === 'ar' ? 'نقطة نجمة' : 'Najmat Points'}
+                        +{potentialPointsEarned} {lang === 'ar' ? 'نقطة نجمة' : lang === 'fr' ? 'Points Najmat' : 'Najmat Points'}
                       </span>
                       <span className="text-[9px] font-mono uppercase bg-white/80 px-1 py-0.2 rounded text-[#A6624B] font-semibold">
-                        {lang === 'ar' ? 'تُكتسب مع هذا الطلب' : 'Earn on purchase'}
+                        {lang === 'ar' ? 'تُكتسب مع هذا الطلب' : lang === 'fr' ? 'Gagnés avec cet achat' : 'Earn on purchase'}
                       </span>
                     </div>
                     <span className="text-[10px] text-stone-600 block truncate font-sans">
-                      {lang === 'ar' ? 'رصيدك الحالي:' : 'Balance:'} <strong className="font-mono text-stone-900">{nourPoints} {lang === 'ar' ? 'نقطة' : 'pts'}</strong> {lang === 'ar' ? '· استبدليها بمكافآت فاخرة' : '· Redeem for luxury gifts'}
+                      {lang === 'ar' ? 'رصيدك الحالي:' : lang === 'fr' ? 'Solde :' : 'Balance:'} <strong className="font-mono text-stone-900">{nourPoints} {lang === 'ar' ? 'نقطة' : lang === 'fr' ? 'pts' : 'pts'}</strong> {lang === 'ar' ? '· استبدليها بمكافآت فاخرة' : lang === 'fr' ? '· À échanger contre des cadeaux' : '· Redeem for luxury gifts'}
                     </span>
                   </div>
                 </div>
@@ -307,7 +304,7 @@ export const CartDrawer: React.FC = () => {
                   }}
                   className="px-2.5 py-1 rounded-lg bg-white border border-stone-200 hover:border-stone-400 text-stone-800 text-[10px] font-semibold whitespace-nowrap hover:bg-stone-50 transition-colors shrink-0 shadow-2xs cursor-pointer"
                 >
-                  {lang === 'ar' ? 'نادي النخبة' : 'VIP Club'}
+                  {lang === 'ar' ? 'نادي النخبة' : lang === 'fr' ? 'Club VIP' : 'VIP Club'}
                 </button>
               </div>
 
@@ -323,10 +320,10 @@ export const CartDrawer: React.FC = () => {
                   <span className="font-mono">
                     {isFreeShipping ? (
                       <span className="text-emerald-700 font-medium uppercase text-[11px]">
-                        {lang === 'ar' ? 'مجاني (0 دج)' : 'Gratuit / Free'}
+                        {lang === 'ar' ? 'مجاني (0 دج)' : lang === 'fr' ? 'Gratuit' : 'Free'}
                       </span>
                     ) : (
-                      lang === 'ar' ? 'تُحسب عند تأكيد الطلب' : 'Calculated at checkout'
+                      lang === 'ar' ? 'تُحسب عند تأكيد الطلب' : lang === 'fr' ? 'Calculé à la commande' : 'Calculated at checkout'
                     )}
                   </span>
                 </div>
@@ -336,19 +333,17 @@ export const CartDrawer: React.FC = () => {
               {hasOutOfStock && (
                 <div className="rounded-xl bg-rose-50 border border-rose-200 px-3.5 py-3 space-y-1.5">
                   <p className="text-[11px] font-bold text-rose-800">
-                    {lang === 'ar'
-                      ? `نفدت الكمية من ${outOfStockItems.length === 1 ? 'منتج' : `${outOfStockItems.length} منتجات`} في سلتك`
-                      : `${outOfStockItems.length === 1 ? 'One item is' : `${outOfStockItems.length} items are`} out of stock in your bag`}
+                    {bagOosBanner(lang, outOfStockItems.length)}
                   </p>
                   <ul className="space-y-1">
                     {outOfStockItems.map((it) => (
                       <li key={it.id} className="flex items-center justify-between gap-2 text-[11px] text-rose-700">
-                        <span className="truncate">{it.product.name}</span>
+                        <span className="truncate">{productName(it.product, lang)}</span>
                         <button
                           onClick={() => removeFromCart(it.id)}
                           className="shrink-0 underline underline-offset-2 font-semibold hover:text-rose-900 cursor-pointer"
                         >
-                          {lang === 'ar' ? 'إزالة' : 'Remove'}
+                          {lang === 'ar' ? 'إزالة' : lang === 'fr' ? 'Retirer' : 'Remove'}
                         </button>
                       </li>
                     ))}

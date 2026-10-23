@@ -3,6 +3,7 @@ import { Sparkles, ArrowRight, Check, ShoppingBag, Eye } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useShop } from '../context/ShopContext';
 import { LUXURY_PRODUCTS } from '../data/products';
+import { productName, outOfStockLabel } from '../utils/localize';
 import { ProductVisual } from './ProductVisual';
 
 export const HeroSection: React.FC = () => {
@@ -94,26 +95,26 @@ export const HeroSection: React.FC = () => {
             <div className="pt-6 border-t border-stone-200/90 grid grid-cols-3 gap-4 text-xs font-sans">
               <div>
                 <span className="font-serif font-bold text-base text-stone-900 block">
-                  {lang === 'ar' ? '10 درجات شاملة' : '10 Inclusive'}
+                  {lang === 'ar' ? '10 درجات شاملة' : lang === 'fr' ? '10 Teintes Universelles' : '10 Inclusive'}
                 </span>
                 <span className="text-stone-500 text-[11px]">
-                  {lang === 'ar' ? 'مصممة لبشرتنا' : 'Mediterranean Shades'}
+                  {lang === 'ar' ? 'مصممة لبشرتنا' : lang === 'fr' ? 'Teintes Méditerranéennes' : 'Mediterranean Shades'}
                 </span>
               </div>
               <div>
                 <span className="font-serif font-bold text-base text-stone-900 block">
-                  {lang === 'ar' ? 'دفع عند الاستلام' : '100% COD'}
+                  {lang === 'ar' ? 'دفع عند الاستلام' : lang === 'fr' ? '100 % Paiement à la livraison' : '100% COD'}
                 </span>
                 <span className="text-stone-500 text-[11px]">
-                  {lang === 'ar' ? 'معاينة الطرد قبل الدفع' : 'Pay upon delivery'}
+                  {lang === 'ar' ? 'معاينة الطرد قبل الدفع' : lang === 'fr' ? 'Paiement à la réception' : 'Pay upon delivery'}
                 </span>
               </div>
               <div>
                 <span className="font-serif font-bold text-base text-stone-900 block">
-                  {lang === 'ar' ? 'خلال 48 ساعة' : '48-Hour'}
+                  {lang === 'ar' ? 'خلال 48 ساعة' : lang === 'fr' ? 'Livraison 48 h' : '48-Hour'}
                 </span>
                 <span className="text-stone-500 text-[11px]">
-                  {lang === 'ar' ? 'لكافة الـ 58 ولاية' : '58 Wilayas Yalidine'}
+                  {lang === 'ar' ? 'لكافة الـ 58 ولاية' : lang === 'fr' ? '58 Wilayas par Yalidine' : '58 Wilayas Yalidine'}
                 </span>
               </div>
             </div>
@@ -181,7 +182,7 @@ export const HeroSection: React.FC = () => {
                           {hs.tag}
                         </span>
                         <h4 className="font-serif font-bold text-xs text-stone-900 truncate">
-                          {hs.product.name}
+                          {productName(hs.product, lang)}
                         </h4>
                         <div className="flex items-center justify-between mt-1 pt-1 border-t border-stone-100">
                           <span className="text-xs font-mono font-bold text-stone-900">
@@ -201,10 +202,8 @@ export const HeroSection: React.FC = () => {
                               }`}
                               title={
                                 (hs.product.stockCount || 0) <= 0
-                                  ? lang === 'ar'
-                                    ? 'نفدت الكمية'
-                                    : 'Out of stock'
-                                  : 'Add to bag'
+                                  ? outOfStockLabel(lang)
+                                  : t('addToBag')
                               }
                             >
                               <ShoppingBag className="w-3 h-3" />

@@ -68,22 +68,22 @@ export const OrderSuccessModal: React.FC = () => {
         {/* Order Details Brief */}
         <div className="p-4 bg-white rounded-2xl border border-stone-200/80 shadow-xs space-y-2 text-xs">
           <div className="flex justify-between text-stone-600">
-            <span>{lang === 'ar' ? 'المستلم:' : 'Destinataire:'}</span>
+            <span>{lang === 'ar' ? 'المستلم:' : lang === 'fr' ? 'Destinataire :' : 'Destinataire:'}</span>
             <span className="font-semibold text-stone-900">{completedOrder.customerName}</span>
           </div>
           <div className="flex justify-between text-stone-600">
-            <span>{lang === 'ar' ? 'رقم الهاتف:' : 'Téléphone:'}</span>
+            <span>{lang === 'ar' ? 'رقم الهاتف:' : lang === 'fr' ? 'Téléphone :' : 'Téléphone:'}</span>
             <span className="font-mono text-stone-900">{completedOrder.phone}</span>
           </div>
           <div className="flex justify-between text-stone-600">
-            <span>{lang === 'ar' ? 'عنوان التوصيل:' : 'Destination:'}</span>
+            <span>{lang === 'ar' ? 'عنوان التوصيل:' : lang === 'fr' ? 'Destination :' : 'Destination:'}</span>
             <span className="text-stone-900">
               {completedOrder.commune}، {completedOrder.wilayaName}
             </span>
           </div>
           <div className="flex justify-between text-stone-600 pt-2 border-t border-stone-100">
             <span className="font-serif font-bold text-stone-900">
-              {lang === 'ar' ? 'المبلغ المطلوب نقداً (COD):' : 'Montant à régler (COD):'}
+              {lang === 'ar' ? 'المبلغ المطلوب نقداً (COD):' : lang === 'fr' ? 'Montant à régler (COD) :' : 'Montant à régler (COD):'}
             </span>
             <span className="font-mono font-bold text-stone-900 text-sm">
               {formatPrice(completedOrder.total, completedOrder.total / 135)}
@@ -127,7 +127,7 @@ export const OrderSuccessModal: React.FC = () => {
               maxLength={4}
               value={otpCode}
               onChange={(e) => setOtpCode(e.target.value)}
-              placeholder={lang === 'ar' ? 'رمز SMS' : 'SMS Code'}
+              placeholder={lang === 'ar' ? 'رمز SMS' : lang === 'fr' ? 'Code SMS' : 'SMS Code'}
               className="w-24 px-3 py-2 bg-white border border-stone-300 rounded-lg text-xs font-mono text-center tracking-widest text-stone-900 focus:outline-none focus:ring-1 focus:ring-[#C87D65]"
             />
             <button
@@ -142,7 +142,7 @@ export const OrderSuccessModal: React.FC = () => {
               {isOtpSuccess ? (
                 <>
                   <Check className="w-3.5 h-3.5" />
-                  <span>{lang === 'ar' ? 'تم التأكيد!' : 'Vérifié & Confirmé !'}</span>
+                  <span>{lang === 'ar' ? 'تم التأكيد!' : lang === 'fr' ? 'Vérifié & Confirmé !' : 'Vérifié & Confirmé !'}</span>
                 </>
               ) : (
                 <span>{t('smsOtpVerifyBtn')}</span>

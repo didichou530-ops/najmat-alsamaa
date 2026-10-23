@@ -1,6 +1,7 @@
 import React from 'react';
 import { Product, Shade } from '../types';
 import { MEDIA_VERSION } from '../data/mediaVersion';
+import { brandPlaque } from '../utils/localize';
 
 interface ProductVisualProps {
   product: Product;
@@ -123,7 +124,7 @@ export const ProductVisual: React.FC<ProductVisualProps> = ({
                 Maison Nour
               </span>
               <span className="block text-[6px] tracking-wider text-stone-600 uppercase font-sans truncate">
-                {product.name.split(' ')[0]}
+                {brandPlaque(product)}
               </span>
             </div>
             <div className="text-[7px] font-mono tracking-tight text-stone-700 bg-white/70 px-2 py-0.5 rounded-full">
@@ -364,7 +365,7 @@ export const ProductVisual: React.FC<ProductVisualProps> = ({
                 Maison Nour
               </span>
               <span className="block text-[6px] tracking-wider text-stone-600 uppercase font-sans truncate">
-                {product.name.split(' ')[0]}
+                {brandPlaque(product)}
               </span>
             </div>
 

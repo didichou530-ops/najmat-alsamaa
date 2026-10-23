@@ -5,6 +5,7 @@ import { useShop } from '../context/ShopContext';
 import { LUXURY_PRODUCTS } from '../data/products';
 import { ProductVisual } from './ProductVisual';
 import { Shade } from '../types';
+import { productName, shadeName } from '../utils/localize';
 
 export const SkinQuizModal: React.FC = () => {
   const { isQuizOpen, closeQuiz, addToCart } = useShop();
@@ -348,7 +349,7 @@ export const SkinQuizModal: React.FC = () => {
                     </span>
                   </div>
                   <h4 className="font-serif font-bold text-stone-900 text-lg mt-1">
-                    {lang === 'ar' ? (matchedShade.nameAr || matchedShade.name) : matchedShade.name}
+                    {shadeName(matchedShade, lang)}
                   </h4>
                   <p className="text-xs text-stone-600 font-sans">
                     {matchedShade.description}
@@ -374,7 +375,7 @@ export const SkinQuizModal: React.FC = () => {
                       {lang === 'ar' ? 'الخطوة 1 · تنظيف' : 'Step 1 · Cleanse'}
                     </span>
                     <h5 className="font-serif font-bold text-stone-800 text-xs mt-1">
-                      {lang === 'ar' ? (recommendedCleanser.nameAr || recommendedCleanser.name) : recommendedCleanser.name}
+                      {productName(recommendedCleanser, lang)}
                     </h5>
                     <p className="text-[11px] text-stone-500 mt-1 line-clamp-2">
                       {lang === 'ar' ? 'منظف شاي أخضر متوازن ينقي المسام بلطف دون تجريد البشرة.' : 'Low-pH green tea melt to purify without stripping.'}
@@ -386,7 +387,7 @@ export const SkinQuizModal: React.FC = () => {
                       {lang === 'ar' ? 'الخطوة 2 · علاج مكثف' : 'Step 2 · Treat'}
                     </span>
                     <h5 className="font-serif font-bold text-stone-800 text-xs mt-1">
-                      {lang === 'ar' ? (recommendedSerum.nameAr || recommendedSerum.name) : recommendedSerum.name}
+                      {productName(recommendedSerum, lang)}
                     </h5>
                     <p className="text-[11px] text-stone-500 mt-1 line-clamp-2">
                       {lang === 'ar' ? 'مكونات نشطة موجهة خصيصاً لعلاج مشكلة بشرتكِ واستعادة نضارتها.' : `Targeted actives addressing ${concern}.`}
@@ -398,7 +399,7 @@ export const SkinQuizModal: React.FC = () => {
                       {lang === 'ar' ? 'الخطوة 3 · حماية وترطيب' : 'Step 3 · Seal'}
                     </span>
                     <h5 className="font-serif font-bold text-stone-800 text-xs mt-1">
-                      {lang === 'ar' ? (recommendedCream.nameAr || recommendedCream.name) : recommendedCream.name}
+                      {productName(recommendedCream, lang)}
                     </h5>
                     <p className="text-[11px] text-stone-500 mt-1 line-clamp-2">
                       {lang === 'ar' ? '5 سيراميدات أساسية لحبس الرطوبة طوال 24 ساعة وترميم الحاجز الواقي.' : '5 Essential ceramides for 24h barrier lock.'}

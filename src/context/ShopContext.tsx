@@ -316,12 +316,39 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const saved: Product[] = JSON.parse(savedRaw);
       if (savedVersion === CATALOG_VERSION) return saved;
 
+      // 🔄 تحديث الكتالوج: نستقبل نصوص المنتجات وصورها الجديدة من الحزمة،
+      //    مع **الحفاظ على تعديلات صاحب المتجر** (سعر الشراء/الهامش/وضع التسعير
+      //    والمخزون) — حتى لا تضيع إعدادات التسعير عند رفع الإصدار.
+      const savedById = new Map(saved.map((p) => [p.id, p]));
+      const carryOwnerEdits = (fresh: Product, own?: Product): Product => {
+        if (!own) return fresh;
+        const merged: Product = {
+          ...fresh,
+          stockCount: own.stockCount ?? fresh.stockCount,
+          batchNumber: own.batchNumber ?? fresh.batchNumber,
+          expirationDate: own.expirationDate ?? fresh.expirationDate
+        };
+        // التسعير الداخلي: يبقى كما ضبطه المالك (إن وُجد) مع السعر المقابل
+        const touchedPricing =
+          own.costPrice != null || own.marginPct != null || own.pricingMode != null;
+        if (touchedPricing) {
+          merged.costPrice = own.costPrice;
+          merged.marginPct = own.marginPct;
+          merged.pricingMode = own.pricingMode;
+          merged.priceDZD = own.priceDZD;
+          merged.priceUSD = own.priceUSD;
+        }
+        return merged;
+      };
+
       // تغيّر إصدار الكتالوج: نحدّث المنتجات الأساسية ونحتفظ بما أضافه المدير
       const seedIds = new Set(LUXURY_PRODUCTS.map((p) => p.id));
       const custom = saved.filter(
         (p) => !seedIds.has(p.id) && !tombstones.includes(p.id)
       );
-      const refreshed = LUXURY_PRODUCTS.filter((p) => !tombstones.includes(p.id));
+      const refreshed = LUXURY_PRODUCTS.filter((p) => !tombstones.includes(p.id)).map(
+        (fresh) => carryOwnerEdits(fresh, savedById.get(fresh.id))
+      );
       const merged = [...refreshed, ...custom];
       localStorage.setItem('mn_catalog_version', CATALOG_VERSION);
       localStorage.setItem('mn_products', JSON.stringify(merged));

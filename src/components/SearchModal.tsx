@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useShop } from '../context/ShopContext';
 import { ProductVisual } from './ProductVisual';
 import { Product, SkinConcern, SkinType } from '../types';
+import { productName } from '../utils/localize';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -184,7 +185,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
                       {product.category}
                     </span>
                     <h4 className="font-serif font-bold text-xs text-stone-900 truncate group-hover:text-[#C87D65] transition-colors">
-                      {lang === 'ar' ? (product.nameAr || product.name) : product.name}
+                      {productName(product, lang)}
                     </h4>
                     <span className="text-xs font-mono font-bold text-stone-800 block mt-1">
                       {formatPrice(product.priceDZD, product.priceUSD)}

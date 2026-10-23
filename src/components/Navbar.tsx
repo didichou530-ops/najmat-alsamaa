@@ -53,7 +53,7 @@ export const Navbar: React.FC = () => {
                 onClick={() => setCurrency('DZD')}
                 className={`transition-colors ${currency === 'DZD' ? 'text-[#C87D65] font-bold' : 'text-stone-300 hover:text-white'}`}
               >
-                DZD (دج)
+                {lang === 'ar' ? 'DZD (دج)' : 'DZD'}
               </button>
               <span className="text-stone-500">·</span>
               <button
@@ -182,9 +182,9 @@ export const Navbar: React.FC = () => {
             >
               <span className="flex items-center gap-1.5">
                 <Award className="w-4 h-4 text-[#C87D65]" />
-                <span>{lang === 'ar' ? 'نادي نجمة السماء VIP' : 'Najmat VIP Club'}</span>
+                <span>{lang === 'ar' ? 'نادي نجمة السماء VIP' : lang === 'fr' ? 'Club VIP Najmat' : 'Najmat VIP Club'}</span>
               </span>
-              <span className="font-mono text-[#C87D65]">{nourPoints} {lang === 'ar' ? 'نقطة' : 'Points'}</span>
+              <span className="font-mono text-[#C87D65]">{nourPoints} {lang === 'ar' ? 'نقطة' : lang === 'fr' ? 'Points' : 'Points'}</span>
             </button>
 
             <button
