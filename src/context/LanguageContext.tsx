@@ -46,7 +46,7 @@ export const DICT: Translations = {
     ar: 'مكونات نشطة نقية، درجات لونية شاملة لجميع البشرات، وتركيبات حسية باريسية مصممة لمقاومة حرارة الصيف ورطوبة البحر الأبيض المتوسط.'
   },
   heroCtaShop: { en: 'Explore the Collection', fr: 'Découvrir la Collection', ar: 'اكتشفي التشكيلة' },
-  heroCtaQuiz: { en: 'Find My Perfect Shade', fr: 'Trouver ma Teinte Idéale', ar: 'اكتشفي درجتك وروتينك' },
+  heroCtaQuiz: { en: 'Find My Routine', fr: 'Trouver ma Routine', ar: 'اكتشفي روتينك المناسب' },
   heroShopLookTitle: { en: 'Interactive Hotspot · Tap to Shop', fr: 'Point d\'intérêt · Cliquez pour acheter', ar: 'انقري على المستحضر لتسوق الإطلالة الكاملة' },
 
   // Filters

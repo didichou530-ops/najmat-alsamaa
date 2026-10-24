@@ -113,7 +113,6 @@ export const AdminDashboard: React.FC = () => {
       paymentMethod: 'cod',
       singleProductItem: {
         product: LUXURY_PRODUCTS[0],
-        shade: LUXURY_PRODUCTS[0].shades![3],
         quantity: 1
       }
     });

@@ -13,6 +13,21 @@ export const FREE_SHIPPING_THRESHOLD_USD = 60;
  */
 export { CATALOG_VERSION } from '../data/mediaVersion';
 
+/**
+ * منتجات تجريبية من القالب القديم — أُزيلت من المتجر نهائياً،
+ * وتُصفّى من الكتالوجات المخزّنة في متصفحات الزوار عند تحديث الإصدار.
+ */
+const RETIRED_PRODUCT_IDS = new Set<string>([
+  'prod-luminous-silk-foundation',
+  'prod-cellular-serum',
+  'prod-barrier-cream',
+  'prod-dew-resurfacing-essence',
+  'prod-cloud-cleanser',
+  'prod-iconic-radiance-trio',
+  'prod-velvet-lip-tint',
+  'prod-sensory-body-oil'
+]);
+
 interface ShopContextType {
   cart: CartItem[];
   selectedSamples: string[];
@@ -314,7 +329,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const saved: Product[] = JSON.parse(savedRaw);
-      if (savedVersion === CATALOG_VERSION) return saved;
+      if (savedVersion === CATALOG_VERSION)
+        return saved.filter((p) => !RETIRED_PRODUCT_IDS.has(p.id));
 
       // 🔄 تحديث الكتالوج: نستقبل نصوص المنتجات وصورها الجديدة من الحزمة،
       //    مع **الحفاظ على تعديلات صاحب المتجر** (سعر الشراء/الهامش/وضع التسعير
@@ -344,7 +360,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // تغيّر إصدار الكتالوج: نحدّث المنتجات الأساسية ونحتفظ بما أضافه المدير
       const seedIds = new Set(LUXURY_PRODUCTS.map((p) => p.id));
       const custom = saved.filter(
-        (p) => !seedIds.has(p.id) && !tombstones.includes(p.id)
+        (p) =>
+          !seedIds.has(p.id) &&
+          !tombstones.includes(p.id) &&
+          !RETIRED_PRODUCT_IDS.has(p.id)
       );
       const refreshed = LUXURY_PRODUCTS.filter((p) => !tombstones.includes(p.id)).map(
         (fresh) => carryOwnerEdits(fresh, savedById.get(fresh.id))

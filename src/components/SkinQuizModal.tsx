@@ -4,8 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useShop } from '../context/ShopContext';
 import { LUXURY_PRODUCTS } from '../data/products';
 import { ProductVisual } from './ProductVisual';
-import { Shade } from '../types';
-import { productName, shadeName } from '../utils/localize';
+import { productName } from '../utils/localize';
 
 export const SkinQuizModal: React.FC = () => {
   const { isQuizOpen, closeQuiz, addToCart } = useShop();
@@ -15,26 +14,32 @@ export const SkinQuizModal: React.FC = () => {
   const [skinType, setSkinType] = useState<'combination' | 'dry' | 'oily' | 'sensitive'>('combination');
   const [concern, setConcern] = useState<'pores' | 'hydration' | 'anti-aging' | 'brightening'>('pores');
   const [finish, setFinish] = useState<'satin' | 'dewy' | 'velvet'>('satin');
-  const [tone, setTone] = useState<string>('280-desert-olive');
   const [isCalculated, setIsCalculated] = useState(false);
 
   if (!isQuizOpen) return null;
 
-  const foundationProduct = LUXURY_PRODUCTS.find((p) => p.id === 'prod-luminous-silk-foundation')!;
-  const matchedShade: Shade =
-    foundationProduct.shades?.find((s) => s.id === tone) || foundationProduct.shades![5];
+  // اختيار منتجات حقيقية من كتالوج المتجر حسب الفئة
+  const byKeyword = (words: string[]) =>
+    LUXURY_PRODUCTS.find((p) =>
+      words.some((w) =>
+        `${p.name} ${p.nameAr} ${p.tagline ?? ''} ${p.taglineAr ?? ''}`.toLowerCase().includes(w)
+      )
+    );
 
-  // Matched Routine recommendations based on answers
+  const recommendedCleanser =
+    byKeyword(['cleansing', 'cleanser', 'غسول', 'nettoyant']) ?? LUXURY_PRODUCTS[0];
   const recommendedSerum =
-    concern === 'anti-aging' || skinType === 'dry'
-      ? LUXURY_PRODUCTS.find((p) => p.id === 'prod-cellular-serum')!
-      : LUXURY_PRODUCTS.find((p) => p.id === 'prod-dew-resurfacing-essence')!;
-
-  const recommendedCream = LUXURY_PRODUCTS.find((p) => p.id === 'prod-barrier-cream')!;
-  const recommendedCleanser = LUXURY_PRODUCTS.find((p) => p.id === 'prod-cloud-cleanser')!;
+    (concern === 'anti-aging' || skinType === 'dry'
+      ? byKeyword(['serum', 'سيروم', 'ampoule'])
+      : byKeyword(['toner', 'تونر', 'essence', 'إسنس'])) ??
+    byKeyword(['serum', 'سيروم']) ??
+    LUXURY_PRODUCTS[1] ??
+    LUXURY_PRODUCTS[0];
+  const recommendedCream =
+    byKeyword(['cream', 'كريم', 'baume', 'بلسم']) ?? LUXURY_PRODUCTS[2] ?? LUXURY_PRODUCTS[0];
 
   const handleNext = () => {
-    if (step < 4) {
+    if (step < 3) {
       setStep(step + 1);
     } else {
       setIsCalculated(true);
@@ -54,7 +59,7 @@ export const SkinQuizModal: React.FC = () => {
   };
 
   const handleAddFullRoutine = () => {
-    addToCart(foundationProduct, 1, matchedShade);
+    addToCart(recommendedCleanser, 1);
     addToCart(recommendedSerum, 1);
     addToCart(recommendedCream, 1);
     handleClose();
@@ -68,7 +73,7 @@ export const SkinQuizModal: React.FC = () => {
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-[#C87D65]" />
             <h2 className="text-sm font-serif font-bold tracking-wider text-stone-900 uppercase">
-              {lang === 'ar' ? 'تشخيص البشرة ومطابقة الدرجة' : lang === 'fr' ? 'Diagnostic & Recherche de Teinte' : 'Skin Diagnostic & Shade Finder'}
+              {lang === 'ar' ? 'تشخيص البشرة' : lang === 'fr' ? 'Diagnostic de Peau' : 'Skin Diagnostic'}
             </h2>
           </div>
           <button
@@ -86,10 +91,10 @@ export const SkinQuizModal: React.FC = () => {
               {/* Progress dots */}
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-stone-500 uppercase tracking-widest font-sans">
-                  {lang === 'ar' ? `المرحلة ${step} من 4` : lang === 'fr' ? `Étape ${step} sur 4` : `Step ${step} of 4`}
+                  {lang === 'ar' ? `المرحلة ${step} من 3` : lang === 'fr' ? `Étape ${step} sur 3` : `Step ${step} of 3`}
                 </span>
                 <div className="flex items-center gap-1.5">
-                  {[1, 2, 3, 4].map((s) => (
+                  {[1, 2, 3].map((s) => (
                     <div
                       key={s}
                       className={`h-1.5 rounded-full transition-all duration-300 ${
@@ -277,44 +282,6 @@ export const SkinQuizModal: React.FC = () => {
                 </div>
               )}
 
-              {/* Step 4: Complexion Tone & Undertone */}
-              {step === 4 && (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-xl font-serif text-stone-900 font-semibold mb-1">
-                      {lang === 'ar' ? 'حددي لون بشرتك ونغمتها التحتية (Undertone)' : 'Select your skin tone & undertone depth'}
-                    </h3>
-                    <p className="text-xs text-stone-600">
-                      {lang === 'ar' ? 'تركيبتنا الحريرية تندمج تلقائياً مع دفء بشرتك' : 'Inclusive pigments formulated for authentic Mediterranean & North African skin tones.'}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-2">
-                    {foundationProduct.shades?.map((sh) => (
-                      <button
-                        key={sh.id}
-                        onClick={() => setTone(sh.id)}
-                        className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center gap-2 ${
-                          tone === sh.id
-                            ? 'border-stone-900 bg-white shadow-md ring-2 ring-[#C87D65]'
-                            : 'border-stone-200 bg-white/50 hover:bg-white'
-                        }`}
-                      >
-                        <div
-                          className="w-10 h-10 rounded-full shadow-inner border border-black/10 transition-transform"
-                          style={{ backgroundColor: sh.hex }}
-                        />
-                        <span className="text-[11px] font-semibold text-stone-800 line-clamp-1">
-                          {sh.name.split(' ')[0]}
-                        </span>
-                        <span className="text-[9px] uppercase tracking-wider text-stone-400 font-sans">
-                          {sh.undertone}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
             </>
           ) : (
             /* Results Screen */
@@ -324,7 +291,7 @@ export const SkinQuizModal: React.FC = () => {
                   {lang === 'ar' ? 'تشخيصك الحصري المكتمل' : 'Personalized Clinical Curation'}
                 </span>
                 <h3 className="text-2xl font-serif text-stone-900 font-bold">
-                  {lang === 'ar' ? 'روتينك النباتي المتكامل ودرجة الأساس المطابقة' : 'Your Tailored Routine & Perfect Shade Match'}
+                  {lang === 'ar' ? 'روتينك المتكامل المخصص لبشرتك' : 'Your Tailored Skincare Routine'}
                 </h3>
                 <p className="text-xs text-stone-500 max-w-md mx-auto">
                   {lang === 'ar'
@@ -333,31 +300,28 @@ export const SkinQuizModal: React.FC = () => {
                 </p>
               </div>
 
-              {/* Matched Shade Card */}
+              {/* Recommended hero product */}
               <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-sm flex flex-col sm:flex-row items-center gap-4">
-                <div
-                  className="w-16 h-16 rounded-2xl shadow-inner border border-black/10 shrink-0"
-                  style={{ backgroundColor: matchedShade.hex }}
-                />
+                <ProductVisual product={recommendedSerum} className="w-16 h-16 rounded-2xl shrink-0" />
                 <div className="flex-1 text-center sm:text-left">
                   <div className="flex items-center justify-center sm:justify-start gap-2">
                     <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-[#FAF0E6] text-[#A6624B]">
-                      {matchedShade.undertone} {lang === 'ar' ? 'نغمة تحتية' : 'Undertone'}
+                      {lang === 'ar' ? 'المنتج الأساسي' : 'Hero Pick'}
                     </span>
                     <span className="text-xs text-stone-400 font-mono">
-                      {lang === 'ar' ? 'تطابق 100%' : '100% Match'}
+                      {lang === 'ar' ? 'مطابق 100%' : '100% Match'}
                     </span>
                   </div>
                   <h4 className="font-serif font-bold text-stone-900 text-lg mt-1">
-                    {shadeName(matchedShade, lang)}
+                    {productName(recommendedSerum, lang)}
                   </h4>
-                  <p className="text-xs text-stone-600 font-sans">
-                    {matchedShade.description}
+                  <p className="text-xs text-stone-600 font-sans line-clamp-2">
+                    {lang === 'ar' ? recommendedSerum.taglineAr : recommendedSerum.tagline}
                   </p>
                 </div>
                 <div className="text-right rtl:text-left shrink-0">
                   <span className="text-sm font-semibold font-mono text-stone-900">
-                    {formatPrice(foundationProduct.priceDZD, foundationProduct.priceUSD)}
+                    {formatPrice(recommendedSerum.priceDZD, recommendedSerum.priceUSD)}
                   </span>
                 </div>
               </div>

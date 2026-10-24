@@ -252,7 +252,7 @@ export const Footer: React.FC = () => {
                   onClick={() => navigate('/quiz')}
                   className="hover:text-white transition-colors text-left rtl:text-right cursor-pointer"
                 >
-                  {lang === 'ar' ? 'تشخيص البشرة ومطابقة الدرجة (#/quiz)' : 'Shade & Skin Diagnostic (#/quiz)'}
+                  {lang === 'ar' ? 'تشخيص البشرة (#/quiz)' : 'Skin Diagnostic (#/quiz)'}
                 </button>
               </li>
               <li>
