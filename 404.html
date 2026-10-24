@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Single Page App Redirect for GitHub Pages
+      var path = window.location.pathname;
+      var repo = '/najmat-alsamaa';
+      if (path.startsWith(repo)) {
+        var sub = path.slice(repo.length).replace(/^\/+/, '');
+        if (sub && sub !== 'index.html') {
+          window.location.replace(repo + '/#/' + sub + window.location.search + window.location.hash);
+        } else {
+          window.location.replace(repo + '/' + window.location.search + window.location.hash);
+        }
+      } else {
+        window.location.replace(repo + '/');
+      }
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>نجمة السماء | إعادة التوجيه</title>
+  </head>
+  <body class="bg-[#FAF7F5] text-[#1C1917]">
+    <div style="font-family: sans-serif; text-align: center; padding-top: 100px;">
+      <p>جاري تحويلك إلى موقع نجمة السماء...</p>
+    </div>
+  </body>
+</html>
