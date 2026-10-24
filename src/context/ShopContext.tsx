@@ -347,7 +347,13 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // التسعير الداخلي: يبقى كما ضبطه المالك (إن وُجد) مع السعر المقابل
         const touchedPricing =
           own.costPrice != null || own.marginPct != null || own.pricingMode != null;
-        if (touchedPricing) {
+        // إذا تغيّر سعر الشراء في الكتالوج نفسه (تحديث أسعار المورّد)
+        // تكون الأولوية لسعر الكتالوج الجديد بدل السعر القديم المحفوظ.
+        const seedPricingChanged =
+          fresh.costPrice != null &&
+          own.costPrice != null &&
+          fresh.costPrice !== own.costPrice;
+        if (touchedPricing && !seedPricingChanged) {
           merged.costPrice = own.costPrice;
           merged.marginPct = own.marginPct;
           merged.pricingMode = own.pricingMode;

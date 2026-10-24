@@ -12,6 +12,20 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = __dirname;
+
+// تحميل .env المحلي إن وُجد (يحتوي NETLIFY_AUTH_TOKEN) — الملف مستثنى من git
+try {
+  const envFile = path.join(ROOT, '.env');
+  if (fs.existsSync(envFile)) {
+    for (const line of fs.readFileSync(envFile, 'utf8').split(/\r?\n/)) {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+      if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+    }
+  }
+} catch {
+  /* ignore */
+}
+
 const OUT = path.join(ROOT, 'dist-root');
 const SITE = process.env.NETLIFY_SITE_ID || '46dc668d-9828-40ac-91b4-1987d9178bf2'; // najmatalsamaa
 const REMOTE = 'https://github.com/didichou530-ops/didichou530-ops.github.io.git';
